@@ -88,9 +88,6 @@
 
   <!-- Hero Section -->
   <div class="max-w-5xl mx-auto px-4 pt-12 pb-8 text-center">
-    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 border border-sky-200 text-sky-800 text-xs font-mono mb-4">
-      <span>✨ LeetCode 1192: Critical Connections in a Network</span>
-    </div>
     <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight mb-4 text-stone-900">
       The Intuition Behind <span class="gradient-text">Tarjan's Algorithm</span>
     </h1>
@@ -98,52 +95,6 @@
       How does Tarjan find every single structural vulnerability in a massive network in a <strong>single pass</strong>? 
       Compare the Naive "Delete & Test" method with Tarjan's linear DFS on an interactive example, understand the time and space complexity, and grasp the magic condition <code class="bg-stone-200 px-2 py-0.5 rounded text-sky-800 code-font text-sm">low[v] &gt; disc[u]</code>.
     </p>
-  </div>
-
-  <!-- 45-Minute Lesson Blueprint & Pacing Guide -->
-  <div class="max-w-5xl mx-auto px-4 mb-10">
-    <div class="bg-white border border-[#E6E0D6] rounded-2xl p-5 shadow-xs">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-200 text-xs">
-        <div class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span class="font-bold text-stone-900 uppercase tracking-wide">45-Minute Instructional Design Blueprint</span>
-          <span class="bg-stone-100 text-stone-600 px-2 py-0.5 rounded border border-stone-200 font-medium">Self-Paced or Instructor-Led</span>
-        </div>
-        <span class="text-stone-500 font-mono">Curriculum Level: Data Structures & Algorithms (Graphs)</span>
-      </div>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 pt-3.5 text-center text-xs">
-        <div class="p-2.5 rounded-xl bg-[#FAF8F5] border border-stone-200 flex flex-col justify-between">
-          <div class="text-[10px] font-bold text-sky-800 uppercase tracking-wider">00 – 08 min</div>
-          <div class="font-bold text-stone-900 mt-1">1. Bridge Intuition</div>
-          <div class="text-[11px] text-stone-500 mt-0.5">Cut-an-edge sandbox</div>
-        </div>
-        <div class="p-2.5 rounded-xl bg-[#FAF8F5] border border-stone-200 flex flex-col justify-between">
-          <div class="text-[10px] font-bold text-sky-800 uppercase tracking-wider">08 – 18 min</div>
-          <div class="font-bold text-stone-900 mt-1">2. Naive vs Tarjan</div>
-          <div class="text-[11px] text-stone-500 mt-0.5">Live dual simulator</div>
-        </div>
-        <div class="p-2.5 rounded-xl bg-[#FAF8F5] border border-stone-200 flex flex-col justify-between">
-          <div class="text-[10px] font-bold text-sky-800 uppercase tracking-wider">18 – 28 min</div>
-          <div class="font-bold text-stone-900 mt-1">3. DFS Tree & Math</div>
-          <div class="text-[11px] text-stone-500 mt-0.5">disc[] & low[] arrays</div>
-        </div>
-        <div class="p-2.5 rounded-xl bg-[#FAF8F5] border border-stone-200 flex flex-col justify-between">
-          <div class="text-[10px] font-bold text-sky-800 uppercase tracking-wider">28 – 35 min</div>
-          <div class="font-bold text-stone-900 mt-1">4. Java Code</div>
-          <div class="text-[11px] text-stone-500 mt-0.5">Annotated walkthrough</div>
-        </div>
-        <div class="p-2.5 rounded-xl bg-[#FAF8F5] border border-stone-200 flex flex-col justify-between">
-          <div class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">35 – 40 min</div>
-          <div class="font-bold text-stone-900 mt-1">5. Knowledge Check</div>
-          <div class="text-[11px] text-stone-500 mt-0.5">3-question self test</div>
-        </div>
-        <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex flex-col justify-between">
-          <div class="text-[10px] font-bold text-amber-800 uppercase tracking-wider">40 – 45 min</div>
-          <div class="font-bold text-amber-950 mt-1">6. Applied Lab</div>
-          <div class="text-[11px] text-amber-800 mt-0.5">5 real-world cases</div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <main class="max-w-5xl mx-auto px-4 pb-24 space-y-14">
@@ -164,7 +115,7 @@
           </p>
           <div class="bg-rose-50 border-l-4 border-rose-500 p-4 rounded-r-xl">
             <p class="font-semibold text-rose-900 text-sm">
-              Removing that edge increases the number of connected components (it splits the graph in two).
+              This means that for any two vertices connected by a bridge, there is no alternative path between them other than the edge itself
             </p>
           </div>
           <p>
