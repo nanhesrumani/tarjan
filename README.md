@@ -89,18 +89,6 @@ Each assignment includes problem context, entity specifications, one-click edge 
 ```
 
 ---
-
-## ⏱️ 45-Minute Lesson Pacing
-
-| Time Window | Module Component | Learning Objective |
-| :--- | :--- | :--- |
-| **00 – 08 min** | 1. Bridge Intuition | Understand critical connections via cut-an-edge sandbox |
-| **08 – 18 min** | 2. Naive vs. Tarjan | Contrast $O(E \cdot (V + E))$ brute force vs. $O(V + E)$ single-pass |
-| **18 – 28 min** | 3. DFS Tree & Math | Grasp `disc[]` timestamps and `low[]` back-edge reachability |
-| **28 – 35 min** | 4. Java Code Walkthrough | Trace production code line-by-line with cycle updates |
-| **35 – 40 min** | 5. Knowledge Check | Validate conceptual retention with immediate diagnostic feedback |
-| **40 – 45 min** | 6. Applied Lab Challenges | Solve 5 real-world case studies in GraphStudio |
-
 ---
 
 ## 📄 License
