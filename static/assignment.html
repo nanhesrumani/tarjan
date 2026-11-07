@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assignment 1: National Railway Critical Tracks • Graph Resilience Lab</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --bg-cream: #FAF7F2;
+      --bg-card: #FFFFFF;
+      --border-warm: #E6E0D6;
+      --text-main: #1C1917;
+      --text-muted: #78716C;
+      --accent-blue: #0284C7;
+      --accent-amber: #D97706;
+      --accent-green: #059669;
+    }
+    body {
+      background-color: var(--bg-cream);
+      color: var(--text-main);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+    .code-font {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+  </style>
+</head>
+<body class="min-h-screen selection:bg-amber-200 selection:text-black">
+
+  <!-- Top Sticky Navigation Bar -->
+  <header class="sticky top-0 z-50 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E6E0D6] px-4 md:px-8 py-3 flex items-center justify-between shadow-xs">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-amber-700 flex items-center justify-center font-bold text-white shadow-sm text-sm">
+        🚆
+      </div>
+      <div>
+        <span class="font-bold text-base text-stone-900 tracking-wide">Railway Resilience Lab</span>
+        <span class="hidden sm:inline-block ml-2 text-xs bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-0.5 rounded-full font-mono font-semibold">Assignment 1</span>
+      </div>
+    </div>
+
+    <!-- Navigation Links -->
+    <div class="flex items-center gap-2.5 text-xs">
+      <a href="/" class="text-stone-700 hover:text-stone-900 transition font-medium flex items-center gap-1 px-3 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 shadow-xs">
+        <span>📖</span>
+        <span>Explanation Guide</span>
+      </a>
+      <a href="/editor?preset=railway_16" class="bg-stone-900 hover:bg-stone-800 text-stone-50 font-semibold px-3.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1.5">
+        <span>⚡</span>
+        <span>Open in GraphStudio</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Problem Statement Content -->
+  <main class="max-w-4xl mx-auto px-4 py-8 space-y-8">
+
+    <!-- Top Assignment Navigation Pills (1 to 5) -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-mono font-semibold">
+      <span class="text-stone-500 font-sans text-xs">Jump to:</span>
+      <a href="/assignment/1" class="px-3 py-1 rounded-lg border transition flex items-center gap-1 bg-amber-600 text-white border-amber-600 font-bold shadow-xs">
+        <span>🚆</span> 1. Railway
+      </a>
+      <a href="/assignment/2" class="px-3 py-1 rounded-lg border transition flex items-center gap-1 bg-white border-stone-300 text-stone-700 hover:border-amber-500">
+        <span>🏔️</span> 2. Hill Station
+      </a>
+      <a href="/assignment/3" class="px-3 py-1 rounded-lg border transition flex items-center gap-1 bg-white border-stone-300 text-stone-700 hover:border-amber-500">
+        <span>👥</span> 3. Social Net
+      </a>
+      <a href="/assignment/4" class="px-3 py-1 rounded-lg border transition flex items-center gap-1 bg-white border-stone-300 text-stone-700 hover:border-amber-500">
+        <span>📡</span> 4. IoT Mesh
+      </a>
+      <a href="/assignment/5" class="px-3 py-1 rounded-lg border transition flex items-center gap-1 bg-white border-stone-300 text-stone-700 hover:border-amber-500">
+        <span>🏢</span> 5. Company Hub
+      </a>
+    </div>
+
+    <!-- Top Badge & Title -->
+    <div>
+      <div class="flex flex-wrap items-center gap-2 mb-3">
+        <span class="px-2.5 py-1 rounded-md bg-amber-100 border border-amber-300 text-amber-900 text-xs font-mono font-bold">
+          ASSIGNMENT 1
+        </span>
+        <span class="px-2.5 py-1 rounded-md bg-sky-100 border border-sky-300 text-sky-800 text-xs font-mono font-bold">
+          DIFFICULTY: MEDIUM-HARD
+        </span>
+        <span class="px-2.5 py-1 rounded-md bg-stone-100 border border-stone-300 text-stone-700 text-xs font-mono font-medium">
+          TARJAN DFS
+        </span>
+      </div>
+
+      <h1 class="text-2xl md:text-4xl font-extrabold text-stone-900 tracking-tight mb-2">
+        National Railway Critical Tracks
+      </h1>
+      <p class="text-stone-600 text-sm md:text-base leading-relaxed">
+        Discover single points of failure across a 16-station passenger rail network connecting 4 regional commuter hubs.
+      </p>
+    </div>
+
+    <!-- Core Question Section -->
+    <section class="bg-white border border-[#E6E0D6] rounded-2xl p-6 md:p-8 shadow-sm space-y-6">
+      
+      <!-- Real-World Scenario & Mission -->
+      <div>
+        <h2 class="text-lg font-bold text-stone-900 flex items-center gap-2 mb-3">
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+          Scenario & Problem Statement
+        </h2>
+        <div class="text-stone-800 text-sm leading-relaxed bg-[#FAF8F5] p-4 rounded-xl border border-stone-200">
+          The National Transit Authority manages 16 passenger railway stations (0 to 15) connected by 20 bidirectional railway tracks across 4 regional commuter hubs: Central Metropolis, Maritime Lake District, Mountain Pass Basin, and Alpine Glacier Terminus. Identify all critical tracks (bridges) whose failure would split the national rail system into disconnected clusters!
+        </div>
+      </div>
+
+      <!-- Prominent Visualizer CTA Banner -->
+      <div class="bg-gradient-to-r from-amber-50 via-white to-sky-50 border border-amber-300/80 rounded-xl p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <span class="text-[11px] font-mono font-bold text-amber-800 uppercase tracking-wider block mb-0.5">Interactive Solver</span>
+          <h3 class="font-bold text-stone-900 text-base">Step Through Tarjan's Logic in GraphStudio</h3>
+          <p class="text-xs text-stone-600 mt-0.5">
+            Open this 16-station network directly in the visualizer to inspect recursion frames, discovery times, and low-link values.
+          </p>
+        </div>
+        <a href="/editor?preset=railway_16" class="bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs px-5 py-3 rounded-lg shadow-sm transition flex items-center justify-center gap-2 shrink-0">
+          <span>⚡</span>
+          <span>Open in GraphStudio Visualizer</span>
+          <span>➔</span>
+        </a>
+      </div>
+
+      <!-- Node Entities Reference Table -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-mono font-bold uppercase tracking-wider text-stone-500">Station Entities & Locations</span>
+          <span class="text-xs font-mono text-stone-600 bg-stone-100 border border-stone-200 px-2 py-0.5 rounded">
+            16 Stations Defined
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs font-mono">
+          <div class="p-2 rounded-lg bg-[#FAF8F5] border border-stone-200 flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-stone-200 text-stone-800 font-bold flex items-center justify-center text-[11px] shrink-0">0</span><span class="text-stone-700 truncate">Central Transit Station</span></div>
+          <div class="p-2 rounded-lg bg-[#FAF8F5] border border-stone-200 flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-stone-200 text-stone-800 font-bold flex items-center justify-center text-[11px] shrink-0">1</span><span class="text-stone-700 truncate">North Hub Junction</span></div>
+          <div class="p-2 rounded-lg bg-[#FAF8F5] border border-stone-200 flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-stone-200 text-stone-800 font-bold flex items-center justify-center text-[11px] shrink-0">2</span><span class="text-stone-700 truncate">South Hub Junction</span></div>
+          <div class="p-2 rounded-lg bg-[#FAF8F5] border border-stone-200 flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-stone-200 text-stone-800 font-bold flex items-center justify-center text-[11px] shrink-0">3</span><span class="text-stone-700 truncate">West Terminal</span></div>
+          <div class="p-2 rounded-lg bg-[#FAF8F5] border border-stone-200 flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-stone-200 text-stone-800 font-bold flex items-center justify-center text-[11px] shrink-0">4</span><span class="text-stone-700 truncate">Valley Crossing Post</span></div>
+          <div class="p-2 rounded-lg bg-[#FAF8F5] border border-stone-200 flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-stone-200 text-stone-800 font-bold flex items-center justify-center text-[11px] shrink-0">5</span><span class="text-stone-700 truncate">Lake Hub Station</span></div>
+          <div class="p-2 rounded-lg bg-[#FAF8F5] border border-stone-200 flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-stone-200 text-stone-800 font-bold flex items-center justify-center text-[11px] shrink-0">6</span><span class="text-stone-700 truncate">Harbour Maritime Post</span></div>
+          <div class="p-2 rounded-lg bg-[#FAF8F5] border border-stone-200 flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-stone-200 text-stone-800 font-bold flex items-center justify-center text-[11px] shrink-0">7</span><span class="text-stone-700 truncate">East Hub Junction</span></div>
+          <div class="p-2 rounded-lg bg-[#FAF8F5] border border-stone-200 flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-stone-200 text-stone-800 font-bold flex items-center justify-center text-[11px] shrink-0">8</span><span class="text-stone-700 truncate">Coastal Terminus</span></div>
+          <div class="p-2 rounded-lg bg-[#FAF8F5] border border-stone-200 flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-stone-200 text-stone-800 font-bold flex items-center justify-center text-[11px] shrink-0">9</span><span class="text-stone-700 truncate">Mountain Rail Junction</span></div>
+          <div class="p-2 rounded-lg bg-[#FAF8F5] border border-stone-200 flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-stone-200 text-stone-800 font-bold flex items-center justify-center text-[11px] shrink-0">10</span><span class="text-stone-700 truncate">Hill Post Station</span></div>
+          <div class="p-2 rounded-lg bg-[#FAF8F5] border border-stone-200 flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-stone-200 text-stone-800 font-bold flex items-center justify-center text-[11px] shrink-0">11</span><span class="text-stone-700 truncate">High Pass Depot</span></div>
+          <div class="p-2 rounded-lg bg-[#FAF8F5] border border-stone-200 flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-stone-200 text-stone-800 font-bold flex items-center justify-center text-[11px] shrink-0">12</span><span class="text-stone-700 truncate">Peak Freight Yard</span></div>
+          <div class="p-2 rounded-lg bg-[#FAF8F5] border border-stone-200 flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-stone-200 text-stone-800 font-bold flex items-center justify-center text-[11px] shrink-0">13</span><span class="text-stone-700 truncate">Border Hub Junction</span></div>
+          <div class="p-2 rounded-lg bg-[#FAF8F5] border border-stone-200 flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-stone-200 text-stone-800 font-bold flex items-center justify-center text-[11px] shrink-0">14</span><span class="text-stone-700 truncate">Alpine Halt</span></div>
+          <div class="p-2 rounded-lg bg-[#FAF8F5] border border-stone-200 flex items-center gap-2"><span class="w-6 h-6 rounded-md bg-stone-200 text-stone-800 font-bold flex items-center justify-center text-[11px] shrink-0">15</span><span class="text-stone-700 truncate">Glacier Terminus</span></div>
+        </div>
+      </div>
+
+      <!-- Nodes & Edges Display + Copy for Editor -->
+      <div class="space-y-3 pt-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-mono font-bold uppercase tracking-wider text-stone-500">Topology Edge List</span>
+            <span class="text-xs font-mono text-stone-700 bg-stone-100 border border-stone-300 px-2 py-0.5 rounded">
+              20 Bidirectional Tracks
+            </span>
+          </div>
+
+          <button id="copy-edges-btn" class="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition shadow-xs flex items-center gap-1.5">
+            <span>📋</span>
+            <span id="copy-btn-text">Copy Nodes & Edges</span>
+          </button>
+        </div>
+
+        <!-- The Raw Edges Box (Easy to read and copy) -->
+        <div class="bg-[#FAF8F5] p-4 rounded-xl border border-stone-300 font-mono text-xs text-stone-800 overflow-x-auto">
+          <div class="text-stone-500 mb-2 font-sans text-xs">Formatted for GraphStudio batch text input:</div>
+          <pre id="raw-edges-box" class="whitespace-pre-wrap leading-relaxed select-all">0 - 1
+1 - 2
+2 - 3
+3 - 0
+0 - 2
+1 - 4
+4 - 5
+5 - 6
+6 - 7
+7 - 5
+7 - 8
+2 - 9
+9 - 10
+10 - 11
+11 - 9
+11 - 12
+12 - 13
+13 - 14
+14 - 15
+15 - 13</pre>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Bottom Navigation -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-[#E6E0D6] text-xs text-stone-600">
+      <a href="/" class="hover:text-stone-900 transition flex items-center gap-1.5 font-medium">
+        <span>⬅</span> Back to Explanation Page
+      </a>
+      <a href="/editor?preset=railway_16" class="bg-stone-900 hover:bg-stone-800 text-white font-semibold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5">
+        <span>⚡</span> Launch GraphStudio Visualizer
+      </a>
+    </div>
+
+  </main>
+
+  <footer class="border-t border-[#E6E0D6] py-6 text-center text-xs text-stone-500">
+    GraphStudio • Graph Resilience Curriculum • Tarjan's Bridge-Finding Algorithm
+  </footer>
+
+  <script>
+    const copyBtn = document.getElementById('copy-edges-btn');
+    const copyBtnText = document.getElementById('copy-btn-text');
+    const rawEdgesBox = document.getElementById('raw-edges-box');
+
+    if (copyBtn && rawEdgesBox) {
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(rawEdgesBox.textContent).then(() => {
+          copyBtnText.textContent = '✓ Copied!';
+          setTimeout(() => {
+            copyBtnText.textContent = 'Copy Nodes & Edges';
+          }, 2000);
+        }).catch(() => {
+          alert('Copied to clipboard!');
+        });
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,1796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Understanding Tarjan's Algorithm: Bridges & Critical Connections</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --bg-cream: #FAF7F2;
+      --card-bg: #FFFFFF;
+      --card-border: #E6E0D6;
+      --accent-cyan: #0284C7;
+      --accent-indigo: #4F46E5;
+      --accent-amber: #D97706;
+      --accent-emerald: #059669;
+      --accent-rose: #DC2626;
+      --text-main: #1C1917;
+      --text-muted: #57534E;
+    }
+    body {
+      background-color: var(--bg-cream);
+      color: var(--text-main);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      scroll-behavior: smooth;
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #0369A1 0%, #4338CA 50%, #B45309 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .code-font {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    /* SVG interactive transitions */
+    .sim-edge {
+      cursor: pointer;
+      stroke-linecap: round;
+      transition: stroke 0.25s, stroke-width 0.25s, opacity 0.25s;
+    }
+    .sim-edge:hover {
+      stroke-width: 6;
+      stroke: #D97706 !important;
+    }
+    .sim-node {
+      transition: transform 0.3s, fill 0.3s;
+    }
+    .sim-node:hover {
+      transform: scale(1.08);
+    }
+  </style>
+</head>
+<body class="antialiased min-h-screen">
+
+  <!-- Sticky Top Navigation -->
+  <header class="sticky top-0 z-50 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E6E0D6] px-4 lg:px-8 py-3 flex items-center justify-between shadow-xs">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-sm">
+        T
+      </div>
+      <div>
+        <span class="font-bold text-base text-stone-900 tracking-wide">Tarjan's Bridge Logic</span>
+        <span class="hidden sm:inline-block ml-2 text-xs bg-sky-50 text-sky-800 border border-sky-200 px-2 py-0.5 rounded-full font-mono">O(V + E) Visual Guide</span>
+      </div>
+    </div>
+
+    <!-- Quick Navigation Jumps -->
+    <nav class="hidden lg:flex items-center gap-3 text-xs text-stone-600 font-medium">
+      <a href="#section-what-is-a-bridge" class="hover:text-sky-700 transition-colors">1. Concept</a>
+      <a href="#section-naive-vs-tarjan" class="hover:text-sky-700 transition-colors">2. Naive vs Tarjan (Interactive)</a>
+      <a href="#section-dfs-tree" class="hover:text-sky-700 transition-colors">3. DFS Tree</a>
+      <a href="#section-disc-low" class="hover:text-sky-700 transition-colors">4. disc & low</a>
+      <a href="#section-condition" class="hover:text-sky-700 transition-colors">5. Bridge Condition</a>
+      <a href="#section-code-breakdown" class="hover:text-sky-700 transition-colors">6. Java Code</a>
+      <a href="#section-knowledge-check" class="hover:text-sky-700 transition-colors">7. Quiz</a>
+      <a href="#section-assignments" class="text-amber-800 font-semibold hover:text-amber-900 transition-colors flex items-center gap-1 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+        <span>🚆</span> 5 Assignments
+      </a>
+    </nav>
+
+    <div class="flex items-center gap-2">
+      <a href="/editor" class="bg-stone-900 hover:bg-stone-800 text-stone-50 text-xs font-semibold px-3 py-1.5 rounded-lg shadow-sm transition-all flex items-center gap-1.5">
+        <span>⚡</span>
+        <span>GraphStudio Editor</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <div class="max-w-5xl mx-auto px-4 pt-12 pb-8 text-center">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 border border-sky-200 text-sky-800 text-xs font-mono mb-4">
+      <span>✨ LeetCode 1192: Critical Connections in a Network</span>
+    </div>
+    <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight mb-4 text-stone-900">
+      The Intuition Behind <span class="gradient-text">Tarjan's Algorithm</span>
+    </h1>
+    <p class="text-stone-600 text-base md:text-lg max-w-3xl mx-auto leading-relaxed">
+      How does Tarjan find every single structural vulnerability in a massive network in a <strong>single pass</strong>? 
+      Compare the Naive "Delete & Test" method with Tarjan's linear DFS on an interactive example, understand the time and space complexity, and grasp the magic condition <code class="bg-stone-200 px-2 py-0.5 rounded text-sky-800 code-font text-sm">low[v] &gt; disc[u]</code>.
+    </p>
+  </div>
+
+  <!-- 45-Minute Lesson Blueprint & Pacing Guide -->
+  <div class="max-w-5xl mx-auto px-4 mb-10">
+    <div class="bg-white border border-[#E6E0D6] rounded-2xl p-5 shadow-xs">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-200 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="font-bold text-stone-900 uppercase tracking-wide">45-Minute Instructional Design Blueprint</span>
+          <span class="bg-stone-100 text-stone-600 px-2 py-0.5 rounded border border-stone-200 font-medium">Self-Paced or Instructor-Led</span>
+        </div>
+        <span class="text-stone-500 font-mono">Curriculum Level: Data Structures & Algorithms (Graphs)</span>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 pt-3.5 text-center text-xs">
+        <div class="p-2.5 rounded-xl bg-[#FAF8F5] border border-stone-200 flex flex-col justify-between">
+          <div class="text-[10px] font-bold text-sky-800 uppercase tracking-wider">00 – 08 min</div>
+          <div class="font-bold text-stone-900 mt-1">1. Bridge Intuition</div>
+          <div class="text-[11px] text-stone-500 mt-0.5">Cut-an-edge sandbox</div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-[#FAF8F5] border border-stone-200 flex flex-col justify-between">
+          <div class="text-[10px] font-bold text-sky-800 uppercase tracking-wider">08 – 18 min</div>
+          <div class="font-bold text-stone-900 mt-1">2. Naive vs Tarjan</div>
+          <div class="text-[11px] text-stone-500 mt-0.5">Live dual simulator</div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-[#FAF8F5] border border-stone-200 flex flex-col justify-between">
+          <div class="text-[10px] font-bold text-sky-800 uppercase tracking-wider">18 – 28 min</div>
+          <div class="font-bold text-stone-900 mt-1">3. DFS Tree & Math</div>
+          <div class="text-[11px] text-stone-500 mt-0.5">disc[] & low[] arrays</div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-[#FAF8F5] border border-stone-200 flex flex-col justify-between">
+          <div class="text-[10px] font-bold text-sky-800 uppercase tracking-wider">28 – 35 min</div>
+          <div class="font-bold text-stone-900 mt-1">4. Java Code</div>
+          <div class="text-[11px] text-stone-500 mt-0.5">Annotated walkthrough</div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-[#FAF8F5] border border-stone-200 flex flex-col justify-between">
+          <div class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">35 – 40 min</div>
+          <div class="font-bold text-stone-900 mt-1">5. Knowledge Check</div>
+          <div class="text-[11px] text-stone-500 mt-0.5">3-question self test</div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex flex-col justify-between">
+          <div class="text-[10px] font-bold text-amber-800 uppercase tracking-wider">40 – 45 min</div>
+          <div class="font-bold text-amber-950 mt-1">6. Applied Lab</div>
+          <div class="text-[11px] text-amber-800 mt-0.5">5 real-world cases</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-5xl mx-auto px-4 pb-24 space-y-14">
+
+    <!-- ========================================== -->
+    <!-- SECTION 1: WHAT IS A BRIDGE?               -->
+    <!-- ========================================== -->
+    <section id="section-what-is-a-bridge" class="bg-white border border-[#E6E0D6] rounded-2xl p-6 md:p-8 shadow-sm">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="flex items-center justify-center w-7 h-7 rounded-full bg-sky-100 border border-sky-300 text-sky-800 text-xs font-bold">1</span>
+        <h2 class="text-xl md:text-2xl font-bold text-stone-900">What is a Bridge (Critical Connection)?</h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+        <div class="space-y-4 text-stone-700 text-sm leading-relaxed">
+          <p>
+            In an undirected connected graph, an edge is called a <strong>Bridge</strong> (or <strong>Critical Connection</strong>) if and only if:
+          </p>
+          <div class="bg-rose-50 border-l-4 border-rose-500 p-4 rounded-r-xl">
+            <p class="font-semibold text-rose-900 text-sm">
+              Removing that edge increases the number of connected components (it splits the graph in two).
+            </p>
+          </div>
+          <p>
+            Think of real-world networks:
+          </p>
+          <ul class="list-disc pl-5 space-y-1.5 text-stone-600">
+            <li><strong>Road network:</strong> If this single highway collapses, island towns are stranded.</li>
+            <li><strong>Data centers:</strong> If this fiber optic line is severed, server clusters can no longer communicate.</li>
+            <li><strong>Single Point of Failure (SPOF):</strong> Any edge that has <em>no alternative bypass path</em>.</li>
+          </ul>
+        </div>
+
+        <!-- Interactive Sandbox 1: Click edges to cut -->
+        <div class="bg-[#FAF8F5] border border-stone-200 rounded-xl p-4 flex flex-col items-center">
+          <div class="w-full flex items-center justify-between text-xs mb-2">
+            <span class="font-bold text-sky-800 flex items-center gap-1.5">
+              <span>✂️</span> Interactive Demo: Click an edge to cut it!
+            </span>
+            <button id="reset-bridge-cut-btn" class="bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 px-2.5 py-1 rounded text-xs transition shadow-xs">
+              ↺ Reset Graph
+            </button>
+          </div>
+
+          <!-- Mini SVG Graph -->
+          <svg id="bridge-cut-svg" viewBox="0 0 460 200" class="w-full h-48 bg-white rounded-lg border border-stone-200 select-none shadow-xs">
+            <!-- Edges -->
+            <!-- Cluster A: 0-1, 1-2, 2-0 -->
+            <line id="cut-edge-0-1" class="sim-edge" x1="60" y1="60" x2="160" y2="100" stroke="#94A3B8" stroke-width="3" />
+            <line id="cut-edge-1-2" class="sim-edge" x1="160" y1="100" x2="60" y2="140" stroke="#94A3B8" stroke-width="3" />
+            <line id="cut-edge-2-0" class="sim-edge" x1="60" y1="140" x2="60" y2="60" stroke="#94A3B8" stroke-width="3" />
+
+            <!-- The Bridge: 1-3 -->
+            <line id="cut-edge-1-3" class="sim-edge" x1="160" y1="100" x2="300" y2="100" stroke="#DC2626" stroke-width="4" stroke-dasharray="none" />
+
+            <!-- Cluster B: 3-4, 4-5, 5-3 -->
+            <line id="cut-edge-3-4" class="sim-edge" x1="300" y1="100" x2="400" y2="60" stroke="#94A3B8" stroke-width="3" />
+            <line id="cut-edge-4-5" class="sim-edge" x1="400" y1="60" x2="400" y2="140" stroke="#94A3B8" stroke-width="3" />
+            <line id="cut-edge-5-3" class="sim-edge" x1="400" y1="140" x2="300" y2="100" stroke="#94A3B8" stroke-width="3" />
+
+            <!-- Bridge Label -->
+            <rect id="bridge-label-bg" x="200" y="86" width="60" height="20" rx="4" fill="#FEF2F2" stroke="#DC2626" stroke-width="1.5"></rect>
+            <text id="bridge-label-txt" x="230" y="100" fill="#DC2626" font-size="10" font-weight="bold" text-anchor="middle" dominant-baseline="middle">BRIDGE</text>
+
+            <!-- Nodes -->
+            <g id="cut-node-0" transform="translate(60,60)"><circle r="16" fill="#FFFFFF" stroke="#0284C7" stroke-width="2.5"/><text fill="#0F172A" font-size="12" font-weight="bold" text-anchor="middle" dy="4">0</text></g>
+            <g id="cut-node-1" transform="translate(160,100)"><circle r="16" fill="#FFFFFF" stroke="#0284C7" stroke-width="2.5"/><text fill="#0F172A" font-size="12" font-weight="bold" text-anchor="middle" dy="4">1</text></g>
+            <g id="cut-node-2" transform="translate(60,140)"><circle r="16" fill="#FFFFFF" stroke="#0284C7" stroke-width="2.5"/><text fill="#0F172A" font-size="12" font-weight="bold" text-anchor="middle" dy="4">2</text></g>
+
+            <g id="cut-node-3" transform="translate(300,100)"><circle r="16" fill="#FFFFFF" stroke="#D97706" stroke-width="2.5"/><text fill="#0F172A" font-size="12" font-weight="bold" text-anchor="middle" dy="4">3</text></g>
+            <g id="cut-node-4" transform="translate(400,60)"><circle r="16" fill="#FFFFFF" stroke="#D97706" stroke-width="2.5"/><text fill="#0F172A" font-size="12" font-weight="bold" text-anchor="middle" dy="4">4</text></g>
+            <g id="cut-node-5" transform="translate(400,140)"><circle r="16" fill="#FFFFFF" stroke="#D97706" stroke-width="2.5"/><text fill="#0F172A" font-size="12" font-weight="bold" text-anchor="middle" dy="4">5</text></g>
+          </svg>
+
+          <!-- Cut Status Message -->
+          <div id="cut-feedback-msg" class="mt-3 text-xs text-center font-medium text-stone-700 min-h-[36px] flex items-center justify-center px-2">
+            Click on any edge to see if removing it splits the graph into two!
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================= -->
+    <!-- SECTION 2: NAIVE VS TARJAN (INTERACTIVE COMPARISON)     -->
+    <!-- ======================================================= -->
+    <section id="section-naive-vs-tarjan" class="bg-white border border-[#E6E0D6] rounded-2xl p-6 md:p-8 shadow-sm space-y-8">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <span class="flex items-center justify-center w-7 h-7 rounded-full bg-sky-100 border border-sky-300 text-sky-800 text-xs font-bold">2</span>
+          <h2 class="text-xl md:text-2xl font-bold text-stone-900">The Naive Approach vs. Tarjan's Breakthrough</h2>
+        </div>
+        <p class="text-stone-600 text-sm leading-relaxed">
+          Watch both methods run on the <strong>exact same example graph</strong>: a cycle of 3 nodes connected to a tail node <code class="code-font text-sky-800 bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200">[0 - 1 - 2 - 0] --- (1 - 3)</code>. Switch tabs below to step through how the Naive method repeatedly deletes edges versus how Tarjan solves it in one smooth DFS pass!
+        </p>
+      </div>
+
+      <!-- INTERACTIVE DUAL-METHOD SIMULATION WIDGET -->
+      <div class="bg-[#FAF8F5] border border-stone-200 rounded-2xl p-5 shadow-xs">
+
+        <!-- Method Switcher Tab Buttons -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-stone-200 gap-3">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-mono font-bold text-stone-500 uppercase">Select Algorithm:</span>
+            <div class="inline-flex rounded-lg border border-stone-300 p-0.5 bg-white shadow-xs">
+              <button id="btn-mode-naive" class="px-3.5 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1.5 bg-rose-600 text-white shadow-xs">
+                <span>❌</span>
+                <span>Naive Method (Delete & Test)</span>
+              </button>
+              <button id="btn-mode-tarjan" class="px-3.5 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1.5 text-stone-600 hover:text-stone-900">
+                <span>⚡</span>
+                <span>Tarjan's Single DFS Pass</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 text-xs font-mono">
+            <span id="algo-complexity-badge" class="bg-rose-100 text-rose-800 border border-rose-300 font-bold px-2.5 py-1 rounded-full">
+              Time: O(E × (V + E))
+            </span>
+          </div>
+        </div>
+
+        <!-- Controls Row -->
+        <div class="flex items-center justify-between my-4 flex-wrap gap-3">
+          <div class="flex items-center gap-2">
+            <button id="dual-sim-prev-btn" class="bg-white hover:bg-stone-50 border border-stone-300 text-stone-700 px-3.5 py-1.5 rounded-lg text-xs font-medium transition shadow-xs">
+              ⏮ Previous
+            </button>
+            <button id="dual-sim-next-btn" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-1.5 rounded-lg text-xs font-semibold transition shadow-xs flex items-center gap-1">
+              <span>Next Step</span>
+              <span>⏭</span>
+            </button>
+            <button id="dual-sim-reset-btn" class="bg-white hover:bg-stone-50 border border-stone-300 text-stone-600 px-2.5 py-1.5 rounded-lg text-xs transition shadow-xs" title="Reset Simulation">
+              ↺
+            </button>
+            <span id="dual-sim-step-badge" class="bg-white border border-stone-200 text-rose-700 text-xs font-mono font-bold px-3 py-1 rounded-lg shadow-xs">
+              Step 1 of 6
+            </span>
+          </div>
+
+          <!-- Dynamic contextual info (Queue/Stack) -->
+          <div id="dual-sim-dynamic-info" class="text-xs font-mono text-stone-600 flex items-center gap-1.5">
+            <span id="dynamic-info-label">Testing Edge:</span>
+            <span id="dynamic-info-pills" class="flex gap-1 items-center font-bold text-stone-800">None</span>
+          </div>
+        </div>
+
+        <!-- Canvas and Walkthrough Details Split -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+          
+          <!-- Shared SVG Graphic -->
+          <div class="bg-white border border-stone-200 rounded-xl p-4 flex flex-col items-center justify-center min-h-[240px] shadow-xs relative">
+            <svg id="dual-sim-canvas-svg" viewBox="0 0 380 200" class="w-full max-w-sm h-52 select-none">
+              <!-- Edge lines -->
+              <line id="sim-edge-0-1" x1="80" y1="60" x2="190" y2="100" stroke="#CBD5E1" stroke-width="3" />
+              <line id="sim-edge-1-2" x1="190" y1="100" x2="80" y2="140" stroke="#CBD5E1" stroke-width="3" />
+              <line id="sim-edge-2-0" x1="80" y1="140" x2="80" y2="60" stroke="#CBD5E1" stroke-width="3" />
+              <line id="sim-edge-1-3" x1="190" y1="100" x2="310" y2="100" stroke="#CBD5E1" stroke-width="3" />
+
+              <!-- Edge cut indicator marker (for naive mode) -->
+              <g id="cut-scissors-marker" style="display: none;" transform="translate(0, 0)">
+                <circle r="12" fill="#FEF2F2" stroke="#DC2626" stroke-width="1.5" />
+                <text font-size="11" text-anchor="middle" dominant-baseline="middle" y="1">✂️</text>
+              </g>
+
+              <!-- Nodes -->
+              <g id="sim-node-grp-0" transform="translate(80,60)">
+                <circle id="sim-circle-0" r="17" fill="#FFFFFF" stroke="#94A3B8" stroke-width="2.5" />
+                <text fill="#0F172A" font-size="12" font-weight="bold" text-anchor="middle" dy="4">0</text>
+                <text id="sim-badge-0" x="0" y="30" fill="#57534E" font-size="9" font-mono text-anchor="middle"></text>
+              </g>
+
+              <g id="sim-node-grp-1" transform="translate(190,100)">
+                <circle id="sim-circle-1" r="17" fill="#FFFFFF" stroke="#94A3B8" stroke-width="2.5" />
+                <text fill="#0F172A" font-size="12" font-weight="bold" text-anchor="middle" dy="4">1</text>
+                <text id="sim-badge-1" x="0" y="30" fill="#57534E" font-size="9" font-mono text-anchor="middle"></text>
+              </g>
+
+              <g id="sim-node-grp-2" transform="translate(80,140)">
+                <circle id="sim-circle-2" r="17" fill="#FFFFFF" stroke="#94A3B8" stroke-width="2.5" />
+                <text fill="#0F172A" font-size="12" font-weight="bold" text-anchor="middle" dy="4">2</text>
+                <text id="sim-badge-2" x="0" y="30" fill="#57534E" font-size="9" font-mono text-anchor="middle"></text>
+              </g>
+
+              <g id="sim-node-grp-3" transform="translate(310,100)">
+                <circle id="sim-circle-3" r="17" fill="#FFFFFF" stroke="#94A3B8" stroke-width="2.5" />
+                <text fill="#0F172A" font-size="12" font-weight="bold" text-anchor="middle" dy="4">3</text>
+                <text id="sim-badge-3" x="0" y="30" fill="#57534E" font-size="9" font-mono text-anchor="middle"></text>
+              </g>
+            </svg>
+
+            <!-- Node / edge legend -->
+            <div id="sim-canvas-legend" class="flex items-center gap-3 text-[10px] font-mono text-stone-500 pt-1">
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block"></span> Visited</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Safe Loop</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> Bridge</span>
+            </div>
+          </div>
+
+          <!-- Step Description Card -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div id="dual-sim-desc-title" class="font-bold text-sm text-rose-700">
+                Naive Method: Initial State
+              </div>
+              <span id="dual-sim-efficiency-tag" class="text-[11px] font-mono bg-rose-50 border border-rose-200 text-rose-800 px-2 py-0.5 rounded font-semibold">
+                BFS Runs: 0 / 4
+              </span>
+            </div>
+
+            <div id="dual-sim-desc-body" class="text-xs text-stone-700 leading-relaxed bg-white border border-stone-200 p-4 rounded-xl min-h-[100px] flex items-center shadow-xs">
+              The graph has 4 vertices and 4 edges. The Naive algorithm must sequentially delete each edge one by one, execute a complete BFS/DFS reachability sweep from node 0, verify if count == 4, and restore the edge.
+            </div>
+
+            <!-- Stats Metrics Wells -->
+            <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+              <div class="p-2.5 rounded-lg bg-white border border-stone-200 shadow-xs">
+                <span class="text-stone-500 block text-[10px] uppercase font-bold">Reachable Nodes:</span>
+                <span id="dual-sim-reachable-display" class="font-bold text-stone-800">4 / 4 (All)</span>
+              </div>
+              <div class="p-2.5 rounded-lg bg-white border border-stone-200 shadow-xs">
+                <span class="text-stone-500 block text-[10px] uppercase font-bold">Bridges Identified:</span>
+                <span id="dual-sim-bridges-found" class="font-bold text-stone-700">None</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ======================================================= -->
+      <!-- COMPREHENSIVE SPACE & TIME COMPLEXITY EXPLANATION        -->
+      <!-- ======================================================= -->
+      <div class="border-t border-stone-200 pt-8 space-y-6">
+        <div>
+          <span class="text-xs uppercase font-mono font-bold tracking-widest text-sky-800">Mathematical Analysis</span>
+          <h3 class="text-lg md:text-xl font-extrabold text-stone-900 mt-0.5">
+            Space and Time Complexity: Why Tarjan is Asymptotically Optimal
+          </h3>
+        </div>
+
+        <!-- Comparative Complexity Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          <!-- Naive Method Complexity -->
+          <div class="bg-rose-50/70 border border-rose-200 rounded-xl p-5 space-y-4 shadow-xs">
+            <div class="flex items-center justify-between pb-3 border-b border-rose-200/80">
+              <div class="flex items-center gap-2">
+                <span class="text-lg">❌</span>
+                <h4 class="font-bold text-rose-900 text-sm">Naive "Delete & Test" Method</h4>
+              </div>
+              <span class="text-xs font-mono bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 rounded font-bold">
+                O(E × (V + E))
+              </span>
+            </div>
+
+            <!-- Time Complexity Details -->
+            <div class="space-y-1.5 text-xs text-stone-700">
+              <span class="font-bold text-rose-900 block font-mono">⏱️ Time Complexity: O(E × (V + E)) = O(V·E + E²)</span>
+              <ul class="list-disc pl-5 space-y-1 text-stone-600">
+                <li><strong>Outer Loop:</strong> Must iterate through all $|E|$ edges in the graph.</li>
+                <li><strong>Inner Traversal:</strong> For each edge removed, a full BFS or DFS traverses up to $|V|$ nodes and $|E|-1$ edges, taking $O(V + E)$ time.</li>
+                <li><strong>Dense Graphs ($E \approx V^2$):</strong> Total time degrades to $O(V \cdot V^2 + V^4) = \mathbf{O(V^3)}$ or worse!</li>
+                <li><strong>On LeetCode 1192 ($V=10^5, E=10^5$):</strong> Operations $\approx 10^5 \times 2\cdot 10^5 = 20,000,000,000$ (20 Billion). Results in immediate <strong>Time Limit Exceeded (TLE)</strong>.</li>
+              </ul>
+            </div>
+
+            <!-- Space Complexity Details -->
+            <div class="space-y-1.5 text-xs text-stone-700 pt-2 border-t border-rose-200/60">
+              <span class="font-bold text-rose-900 block font-mono">💾 Space Complexity: O(V + E)</span>
+              <ul class="list-disc pl-5 space-y-1 text-stone-600">
+                <li><strong>Adjacency Storage:</strong> $O(V + E)$ to represent graph tracks/edges.</li>
+                <li><strong>Auxiliary Space:</strong> $O(V)$ for BFS queue and visited boolean array.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Tarjan's Method Complexity -->
+          <div class="bg-sky-50/70 border border-sky-200 rounded-xl p-5 space-y-4 shadow-xs">
+            <div class="flex items-center justify-between pb-3 border-b border-sky-200/80">
+              <div class="flex items-center gap-2">
+                <span class="text-lg">⚡</span>
+                <h4 class="font-bold text-sky-900 text-sm">Tarjan's Single-Pass Algorithm</h4>
+              </div>
+              <span class="text-xs font-mono bg-sky-100 text-sky-800 border border-sky-300 px-2 py-0.5 rounded font-bold">
+                O(V + E)
+              </span>
+            </div>
+
+            <!-- Time Complexity Details -->
+            <div class="space-y-1.5 text-xs text-stone-700">
+              <span class="font-bold text-sky-900 block font-mono">⏱️ Time Complexity: O(V + E) [Linear & Optimal]</span>
+              <ul class="list-disc pl-5 space-y-1 text-stone-600">
+                <li><strong>Single Traversal:</strong> Every vertex is entered and exited exactly once $\to O(V)$.</li>
+                <li><strong>Edge Inspection:</strong> Each undirected edge is traversed exactly twice (once from each endpoint) $\to \sum \deg(v) = 2|E| \implies O(E)$.</li>
+                <li><strong>Zero Edge Deletions:</strong> Never deletes any edges or re-traverses the graph.</li>
+                <li><strong>On LeetCode 1192 ($V=10^5, E=10^5$):</strong> Operations $\approx 10^5 + 10^5 = 200,000$ (0.2 Million). Executes in <strong>~15 milliseconds (Instant)</strong>.</li>
+              </ul>
+            </div>
+
+            <!-- Space Complexity Details -->
+            <div class="space-y-1.5 text-xs text-stone-700 pt-2 border-t border-sky-200/60">
+              <span class="font-bold text-sky-900 block font-mono">💾 Space Complexity: O(V) Auxiliary Memory</span>
+              <ul class="list-disc pl-5 space-y-1 text-stone-600">
+                <li><strong>Discovery Time Array:</strong> <code class="code-font text-sky-800">disc[]</code> of size $V \to O(V)$.</li>
+                <li><strong>Lowest Reachable Array:</strong> <code class="code-font text-sky-800">low[]</code> of size $V \to O(V)$.</li>
+                <li><strong>Recursion Call Stack:</strong> Up to $O(V)$ in the worst-case (skewed chain graph $0-1-2-\dots-N$), or $O(H)$ where $H$ is the DFS tree height.</li>
+                <li><strong>Adjacency Map:</strong> $O(V + E)$ required to store connections.</li>
+              </ul>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Complexity Comparison Matrix Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left border-collapse border border-stone-200 rounded-xl overflow-hidden shadow-xs">
+            <thead>
+              <tr class="bg-stone-100 text-stone-800 border-b border-stone-200 font-bold">
+                <th class="p-3">Metric</th>
+                <th class="p-3 text-rose-800">Naive "Delete & Test"</th>
+                <th class="p-3 text-sky-800">Tarjan's DFS Algorithm</th>
+                <th class="p-3 text-stone-600">Why It Matters</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-stone-200 text-stone-700">
+              <tr class="bg-white">
+                <td class="p-3 font-semibold">Worst-Case Time</td>
+                <td class="p-3 font-mono text-rose-700 font-bold">$O(E \times (V + E))$</td>
+                <td class="p-3 font-mono text-emerald-700 font-bold">$O(V + E)$</td>
+                <td class="p-3">Tarjan is linear; Naive is quadratic or cubic.</td>
+              </tr>
+              <tr class="bg-[#FAF8F5]">
+                <td class="p-3 font-semibold">Auxiliary Space</td>
+                <td class="p-3 font-mono text-stone-800">$O(V)$ (Queue & Visited)</td>
+                <td class="p-3 font-mono text-stone-800">$O(V)$ (disc, low & Stack)</td>
+                <td class="p-3">Both require minimal $O(V)$ extra memory beyond graph storage.</td>
+              </tr>
+              <tr class="bg-white">
+                <td class="p-3 font-semibold">Graph Modifications</td>
+                <td class="p-3 text-rose-800 font-medium">Deletes & restores every edge</td>
+                <td class="p-3 text-emerald-800 font-semibold">Read-only (0 deletions)</td>
+                <td class="p-3">Mutating adjacency list repeatedly introduces overhead and edge-case bugs.</td>
+              </tr>
+              <tr class="bg-[#FAF8F5]">
+                <td class="p-3 font-semibold">LeetCode $10^5$ Run</td>
+                <td class="p-3 text-rose-700 font-bold">20,000,000,000 ops (TLE ❌)</td>
+                <td class="p-3 text-emerald-700 font-bold">200,000 ops (~15ms ✅)</td>
+                <td class="p-3">Tarjan is <strong>100,000× faster</strong> on competitive benchmarks.</td>
+              </tr>
+              <tr class="bg-white">
+                <td class="p-3 font-semibold">Theoretical Optimality</td>
+                <td class="p-3 text-stone-500">Suboptimal</td>
+                <td class="p-3 text-sky-800 font-bold">Asymptotically Optimal ($\Theta(V+E)$)</td>
+                <td class="p-3">Reading the graph input itself takes $\Omega(V+E)$, so no algorithm can be faster!</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SECTION 3: DFS TREE & BACK EDGES           -->
+    <!-- ========================================== -->
+    <section id="section-dfs-tree" class="bg-white border border-[#E6E0D6] rounded-2xl p-6 md:p-8 shadow-sm">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="flex items-center justify-center w-7 h-7 rounded-full bg-sky-100 border border-sky-300 text-sky-800 text-xs font-bold">3</span>
+        <h2 class="text-xl md:text-2xl font-bold text-stone-900">The Secret: Tree Edges vs. Back Edges</h2>
+      </div>
+
+      <p class="text-stone-700 text-sm leading-relaxed mb-6">
+        When Depth-First Search visits an undirected graph, it organizes all nodes into a <strong>DFS Spanning Tree</strong>. 
+        Every edge in the graph falls into one of two categories:
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-[#FAF8F5] border border-stone-200 rounded-xl p-5">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-3 h-3 rounded-full bg-emerald-600"></span>
+            <h3 class="font-bold text-emerald-800 text-sm">1. Tree Edges (Forward exploration)</h3>
+          </div>
+          <p class="text-xs text-stone-700 leading-relaxed mb-2">
+            An edge to a node that has <strong>never been visited before</strong> (<code class="code-font text-emerald-800 font-bold">disc[next] == 0</code>).
+          </p>
+          <p class="text-xs text-stone-600">
+            Tree edges form the backbone hierarchy of our DFS tree: Parent $u \to$ Child $v$.
+          </p>
+        </div>
+
+        <div class="bg-[#FAF8F5] border border-stone-200 rounded-xl p-5">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-3 h-3 rounded-full bg-purple-600"></span>
+            <h3 class="font-bold text-purple-800 text-sm">2. Back Edges (The Escape Cycles!)</h3>
+          </div>
+          <p class="text-xs text-stone-700 leading-relaxed mb-2">
+            An edge connecting a descendant back to an <strong>already-visited ancestor</strong> (excluding the immediate parent).
+          </p>
+          <p class="text-xs text-stone-600">
+            A back edge creates an alternative bypass route (a cycle!).
+          </p>
+        </div>
+      </div>
+
+      <!-- Crucial Theorem Callout -->
+      <div class="bg-amber-50/80 border border-amber-200 rounded-xl p-5">
+        <div class="flex items-start gap-3">
+          <span class="text-2xl">💡</span>
+          <div>
+            <h4 class="font-bold text-amber-900 text-sm mb-1">Fundamental Theorem: Can a Back Edge ever be a Bridge?</h4>
+            <p class="text-xs text-stone-700 leading-relaxed">
+              <strong>NEVER!</strong> A back edge connects a node back to an ancestor that was already reached through the tree. Even if you remove the back edge, the tree path still connects them! 
+              Therefore, <span class="text-amber-800 font-semibold underline">ONLY TREE EDGES CAN POSSIBLY BE BRIDGES</span>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SECTION 4: DISC AND LOW ARRAYS             -->
+    <!-- ========================================== -->
+    <section id="section-disc-low" class="bg-white border border-[#E6E0D6] rounded-2xl p-6 md:p-8 shadow-sm">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="flex items-center justify-center w-7 h-7 rounded-full bg-sky-100 border border-sky-300 text-sky-800 text-xs font-bold">4</span>
+        <h2 class="text-xl md:text-2xl font-bold text-stone-900">The Two Arrays: `disc[]` and `low[]`</h2>
+      </div>
+
+      <p class="text-stone-700 text-sm leading-relaxed mb-6">
+        To mathematically check whether an escape route exists from a child's subtree, Tarjan assigns two numbers to each node $u$:
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- disc -->
+        <div class="bg-[#FAF8F5] border border-sky-200 rounded-xl p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-mono text-sky-800 font-bold text-base">disc[u] (Discovery Time)</span>
+            <span class="text-[11px] bg-sky-100 text-sky-800 border border-sky-200 px-2 py-0.5 rounded font-mono font-bold">Timestamp</span>
+          </div>
+          <p class="text-xs text-stone-700 leading-relaxed mb-3">
+            The clock timestamp of when DFS first set foot on node $u$.
+          </p>
+          <div class="bg-white p-3 rounded-lg border border-stone-200 text-xs font-mono text-sky-800 font-bold mb-3 shadow-xs">
+            disc[curr] = time++;
+          </div>
+          <p class="text-xs text-stone-600">
+            If <code class="code-font text-sky-800 font-bold">disc[u] == 0</code>, the node has not yet been visited. Once assigned, <code class="code-font text-sky-800 font-bold">disc[u]</code> <strong>never changes</strong>.
+          </p>
+        </div>
+
+        <!-- low -->
+        <div class="bg-[#FAF8F5] border border-amber-200 rounded-xl p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-mono text-amber-800 font-bold text-base">low[u] (Lowest Reachable)</span>
+            <span class="text-[11px] bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded font-mono font-bold">Escape Anchor</span>
+          </div>
+          <p class="text-xs text-stone-700 leading-relaxed mb-3">
+            The <strong>lowest discovery timestamp</strong> reachable from $u$ (or from $u$'s descendants) using tree edges and at most <strong>one back edge</strong>.
+          </p>
+          <div class="bg-white p-3 rounded-lg border border-stone-200 text-xs font-mono text-amber-800 font-bold mb-3 shadow-xs">
+            low[curr] = disc[curr]; // initially
+          </div>
+          <p class="text-xs text-stone-600">
+            If $u$'s subtree can reach an earlier ancestor via a cycle, <code class="code-font text-amber-800 font-bold">low[u]</code> shrinks to that ancestor's timestamp!
+          </p>
+        </div>
+      </div>
+
+      <!-- Updating Rules -->
+      <div class="mt-6 bg-[#FAF8F5] border border-stone-200 rounded-xl p-5">
+        <h4 class="font-bold text-stone-900 text-sm mb-3">How does `low[curr]` get updated during the loop over `edgeMap.get(curr)`?</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div class="p-3.5 bg-white rounded-lg border border-stone-200 shadow-xs">
+            <span class="font-bold text-emerald-700 block mb-1">Case 1: Neighbor is unvisited child (Tree Edge)</span>
+            <p class="text-stone-600 mb-2">We recursively run <code class="code-font text-emerald-800">dfs(next, curr)</code>. When the child finishes and backtracks to us:</p>
+            <code class="code-font text-sky-800 font-bold bg-sky-50 px-2 py-1 rounded block border border-sky-200">low[curr] = Math.min(low[curr], low[next]);</code>
+            <p class="text-stone-500 mt-2">"Whatever highest ancestor my child can escape to, I can also escape to!"</p>
+          </div>
+
+          <div class="p-3.5 bg-white rounded-lg border border-stone-200 shadow-xs">
+            <span class="font-bold text-purple-700 block mb-1">Case 2: Neighbor already visited (Back Edge)</span>
+            <p class="text-stone-600 mb-2">If <code class="code-font text-purple-800">next != prev</code>, we found a cycle connecting us back to an ancestor:</p>
+            <code class="code-font text-purple-800 font-bold bg-purple-50 px-2 py-1 rounded block border border-purple-200">low[curr] = Math.min(low[curr], disc[next]);</code>
+            <p class="text-stone-500 mt-2">"I have a direct back-door jumping up to node <code class="code-font">next</code>!"</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SECTION 5: THE BRIDGE CONDITION            -->
+    <!-- ========================================== -->
+    <section id="section-condition" class="bg-white border border-[#E6E0D6] rounded-2xl p-6 md:p-8 shadow-sm">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="flex items-center justify-center w-7 h-7 rounded-full bg-sky-100 border border-sky-300 text-sky-800 text-xs font-bold">5</span>
+        <h2 class="text-xl md:text-2xl font-bold text-stone-900">The Moment of Truth: Why `low[next] > disc[curr]`?</h2>
+      </div>
+
+      <div class="bg-gradient-to-r from-rose-50 via-amber-50 to-orange-50 border border-rose-200 rounded-xl p-5 mb-6 text-center">
+        <span class="text-xs uppercase font-mono tracking-widest text-rose-800 font-bold block mb-1">The Golden Tarjan Condition</span>
+        <div class="text-2xl md:text-3xl font-extrabold text-rose-700 code-font my-2">
+          if (low[next] &gt; disc[curr])
+        </div>
+        <p class="text-sm text-stone-700 font-medium">
+          Edge <code class="code-font bg-white border border-stone-200 px-2 py-0.5 rounded text-stone-900 font-bold">(curr, next)</code> is guaranteed to be a <strong>CRITICAL BRIDGE</strong>!
+        </p>
+      </div>
+
+      <!-- Interactive Escape Route Toggle -->
+      <div class="bg-[#FAF8F5] border border-stone-200 rounded-xl p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div>
+            <h3 class="font-bold text-stone-900 text-sm">Interactive Escape Route Visualizer</h3>
+            <p class="text-xs text-stone-600">Toggle the cycle back-edge to see how `low[child]` changes and flips the bridge status!</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="toggle-backedge-btn" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-xs">
+              Toggle Back-Edge (Cycle)
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+          <!-- SVG Tree Diagram -->
+          <div class="lg:col-span-2 bg-white border border-stone-200 rounded-xl p-4 flex justify-center shadow-xs">
+            <svg id="escape-route-svg" viewBox="0 0 380 230" class="w-full max-w-md h-56 select-none">
+              <!-- Tree Edge 1 -> 3 -->
+              <line id="er-tree-edge" x1="190" y1="50" x2="190" y2="120" stroke="#DC2626" stroke-width="3" />
+              <!-- Tree Edges 3 -> 4, 3 -> 5 -->
+              <line x1="190" y1="120" x2="130" y2="190" stroke="#0284C7" stroke-width="2.5" />
+              <line x1="190" y1="120" x2="250" y2="190" stroke="#0284C7" stroke-width="2.5" />
+              <line x1="130" y1="190" x2="250" y2="190" stroke="#0284C7" stroke-width="2.5" />
+
+              <!-- Back Edge (from 5 curving back to 1) -->
+              <path id="er-back-edge" d="M 260 185 C 340 180, 320 60, 205 45" fill="none" stroke="#059669" stroke-width="3" stroke-dasharray="6,4" style="display: none;" />
+
+              <!-- Node 1 (Parent curr) -->
+              <g transform="translate(190, 45)">
+                <circle r="18" fill="#FFFFFF" stroke="#0284C7" stroke-width="2.5" />
+                <text fill="#0F172A" font-size="12" font-weight="bold" text-anchor="middle" dy="4">curr (1)</text>
+                <text x="35" y="4" fill="#0284C7" font-size="11" font-mono font-weight="bold">disc[1] = 2</text>
+              </g>
+
+              <!-- Node 3 (Child next) -->
+              <g transform="translate(190, 120)">
+                <circle r="18" fill="#FFFFFF" stroke="#D97706" stroke-width="2.5" />
+                <text fill="#0F172A" font-size="12" font-weight="bold" text-anchor="middle" dy="4">next (3)</text>
+                <text id="er-low-text" x="35" y="4" fill="#D97706" font-size="11" font-mono font-weight="bold">low[3] = 4</text>
+              </g>
+
+              <!-- Node 4 & 5 (Subtree descendants) -->
+              <g transform="translate(130, 190)">
+                <circle r="14" fill="#FFFFFF" stroke="#64748B" stroke-width="2" />
+                <text fill="#0F172A" font-size="10" font-weight="bold" text-anchor="middle" dy="4">4</text>
+              </g>
+              <g transform="translate(250, 190)">
+                <circle r="14" fill="#FFFFFF" stroke="#64748B" stroke-width="2" />
+                <text fill="#0F172A" font-size="10" font-weight="bold" text-anchor="middle" dy="4">5</text>
+              </g>
+
+              <!-- Edge 1-3 Bridge Badge -->
+              <rect id="er-badge-bg" x="145" y="75" width="90" height="20" rx="4" fill="#FEF2F2" stroke="#DC2626" stroke-width="1.5" />
+              <text id="er-badge-txt" x="190" y="89" fill="#DC2626" font-size="10" font-weight="bold" text-anchor="middle">BRIDGE (1, 3)</text>
+            </svg>
+          </div>
+
+          <!-- Dynamic Explanation Panel -->
+          <div id="er-explanation-card" class="bg-rose-50 border border-rose-200 rounded-xl p-4 space-y-3">
+            <div class="flex items-center gap-2">
+              <span id="er-status-icon" class="text-xl">🚨</span>
+              <span id="er-status-title" class="font-bold text-sm text-rose-800">NO ESCAPE ROUTE (Bridge!)</span>
+            </div>
+            <div class="text-xs font-mono bg-white p-2.5 rounded border border-rose-200 space-y-1 shadow-xs">
+              <div>disc[curr=1] = <span class="text-sky-800 font-bold">2</span></div>
+              <div id="er-low-calc">low[next=3] = <span class="text-amber-800 font-bold">4</span></div>
+              <div id="er-compare-calc" class="text-rose-700 font-bold pt-1 border-t border-stone-200">
+                low[3] (4) &gt; disc[1] (2) → TRUE!
+              </div>
+            </div>
+            <p id="er-desc-text" class="text-xs text-stone-700 leading-relaxed">
+              Node 3 and its children (4, 5) have <strong>zero connections</strong> back up to node 1 or above. 
+              Edge (1, 3) is their ONLY link to the rest of the graph. Cut it, and {3, 4, 5} are trapped forever!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- The 3 Possibilities Comparison Table -->
+      <div class="mt-6 overflow-x-auto">
+        <table class="w-full text-xs text-left border-collapse border border-stone-200 rounded-xl overflow-hidden">
+          <thead>
+            <tr class="bg-stone-100 text-stone-700 border-b border-stone-200">
+              <th class="p-3 font-semibold">Comparison</th>
+              <th class="p-3 font-semibold">What it means for child $v$</th>
+              <th class="p-3 font-semibold">Is $(u, v)$ a Bridge?</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-stone-200 text-stone-700">
+            <tr class="bg-white">
+              <td class="p-3 font-mono text-sky-800 font-bold">low[v] &lt; disc[u]</td>
+              <td class="p-3">$v$'s subtree reaches an ancestor visited <strong>before</strong> $u$. An escape cycle loops around $u$!</td>
+              <td class="p-3"><span class="text-emerald-700 font-semibold">No</span> (Safe cycle)</td>
+            </tr>
+            <tr class="bg-[#FAF8F5]">
+              <td class="p-3 font-mono text-amber-800 font-bold">low[v] == disc[u]</td>
+              <td class="p-3">$v$'s subtree can loop back to $u$ itself. A cycle passes through $u$!</td>
+              <td class="p-3"><span class="text-emerald-700 font-semibold">No</span> (Alternative path exists)</td>
+            </tr>
+            <tr class="bg-rose-50/80">
+              <td class="p-3 font-mono text-rose-800 font-bold">low[v] &gt; disc[u]</td>
+              <td class="p-3">The earliest node $v$ can reach was discovered <strong>after</strong> $u$. $v$ cannot reach $u$ or above without edge $(u, v)$!</td>
+              <td class="p-3"><span class="text-rose-700 font-bold">YES! CRITICAL BRIDGE</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SECTION 6: CODE BREAKDOWN                  -->
+    <!-- ========================================== -->
+    <section id="section-code-breakdown" class="bg-white border border-[#E6E0D6] rounded-2xl p-6 md:p-8 shadow-sm">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="flex items-center justify-center w-7 h-7 rounded-full bg-sky-100 border border-sky-300 text-sky-800 text-xs font-bold">6</span>
+        <h2 class="text-xl md:text-2xl font-bold text-stone-900">Line-by-Line Java Solution Walkthrough</h2>
+      </div>
+
+      <p class="text-stone-700 text-sm leading-relaxed mb-6">
+        Here is your exact Java solution with the logical reason behind every single line annotated:
+      </p>
+
+      <div class="bg-[#FAF8F5] border border-stone-200 rounded-xl overflow-hidden text-xs code-font shadow-xs">
+        <!-- Code snippet with line numbers & interactive highlights -->
+        <div class="p-4 space-y-1.5 overflow-x-auto text-stone-800">
+          <div class="text-stone-500 italic">// 1. Initialize discovery time, low-link array, timer, and adjacency map</div>
+          <div><span class="text-purple-700 font-bold">class</span> <span class="text-amber-700 font-bold">Solution</span> {</div>
+          <div class="pl-4"><span class="text-purple-700 font-bold">int</span>[] disc, low;</div>
+          <div class="pl-4"><span class="text-purple-700 font-bold">int</span> time = <span class="text-amber-700 font-bold">1</span>; <span class="text-stone-500 italic">// 1-based discovery clock</span></div>
+          <div class="pl-4">List&lt;List&lt;Integer&gt;&gt; ans = <span class="text-purple-700 font-bold">new</span> ArrayList&lt;&gt;();</div>
+          <div class="pl-4">Map&lt;Integer, List&lt;Integer&gt;&gt; edgeMap = <span class="text-purple-700 font-bold">new</span> HashMap&lt;&gt;();</div>
+          
+          <div class="text-stone-500 italic pt-2 pl-4">// 2. Build graph & trigger DFS</div>
+          <div class="pl-4"><span class="text-purple-700 font-bold">public</span> List&lt;List&lt;Integer&gt;&gt; <span class="text-sky-700 font-bold">criticalConnections</span>(<span class="text-purple-700 font-bold">int</span> n, List&lt;List&lt;Integer&gt;&gt; connections) {</div>
+          <div class="pl-8">disc = <span class="text-purple-700 font-bold">new int</span>[n]; low = <span class="text-purple-700 font-bold">new int</span>[n];</div>
+          <div class="pl-8"><span class="text-purple-700 font-bold">for</span> (<span class="text-purple-700 font-bold">int</span> i = 0; i &lt; n; i++) edgeMap.put(i, <span class="text-purple-700 font-bold">new</span> ArrayList&lt;&gt;());</div>
+          <div class="pl-8"><span class="text-purple-700 font-bold">for</span> (List&lt;Integer&gt; conn : connections) {</div>
+          <div class="pl-12">edgeMap.get(conn.get(<span class="text-amber-700 font-bold">0</span>)).add(conn.get(<span class="text-amber-700 font-bold">1</span>));</div>
+          <div class="pl-12">edgeMap.get(conn.get(<span class="text-amber-700 font-bold">1</span>)).add(conn.get(<span class="text-amber-700 font-bold">0</span>)); <span class="text-stone-500 italic">// Undirected</span></div>
+          <div class="pl-8">}</div>
+          <div class="text-sky-800 font-bold pl-8">dfs(0, -1); <span class="text-stone-500 font-normal italic">// Start DFS from node 0 with no parent (-1)</span></div>
+          <div class="pl-8"><span class="text-purple-700 font-bold">return</span> ans;</div>
+          <div class="pl-4">}</div>
+
+          <div class="text-stone-500 italic pt-3 pl-4">// 3. The Core Tarjan DFS Function</div>
+          <div class="pl-4"><span class="text-purple-700 font-bold">public void</span> <span class="text-sky-700 font-bold">dfs</span>(<span class="text-purple-700 font-bold">int</span> curr, <span class="text-purple-700 font-bold">int</span> prev) {</div>
+          <div class="bg-sky-50 text-sky-900 border-l-3 border-sky-600 pl-8 py-1 my-0.5 rounded-r">disc[curr] = low[curr] = time++; <span class="text-stone-500 italic">// Timestamp discovery</span></div>
+          <div class="pl-8"><span class="text-purple-700 font-bold">for</span> (<span class="text-purple-700 font-bold">int</span> next : edgeMap.get(curr)) {</div>
+          <div class="pl-12"><span class="text-purple-700 font-bold">if</span> (disc[next] == <span class="text-amber-700 font-bold">0</span>) { <span class="text-stone-500 italic">// Unvisited → Tree Edge!</span></div>
+          <div class="pl-16">dfs(next, curr); <span class="text-stone-500 italic">// Explore child</span></div>
+          <div class="text-emerald-800 font-bold pl-16">low[curr] = Math.min(low[curr], low[next]); <span class="text-stone-500 font-normal italic">// Child backtracks its lowest</span></div>
+          <div class="pl-12">} <span class="text-purple-700 font-bold">else if</span> (next != prev) { <span class="text-stone-500 italic">// Visited ancestor (not parent) → Back Edge!</span></div>
+          <div class="text-purple-800 font-bold pl-16">low[curr] = Math.min(low[curr], disc[next]); <span class="text-stone-500 font-normal italic">// Cycle bypass found!</span></div>
+          <div class="pl-12">}</div>
+          <div class="bg-rose-50 text-rose-900 border-l-3 border-rose-500 pl-12 py-1 my-1 rounded-r">
+            <span class="text-purple-700 font-bold">if</span> (low[next] &gt; disc[curr]) <span class="text-stone-500 italic">// Bridge check!</span><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;ans.add(Arrays.asList(curr, next));
+          </div>
+          <div class="pl-8">}</div>
+          <div class="pl-4">}</div>
+          <div>}</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SECTION 7: COMMON QUESTIONS & PITFALLS     -->
+    <!-- ========================================== -->
+    <section class="bg-white border border-[#E6E0D6] rounded-2xl p-6 md:p-8 shadow-sm">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="flex items-center justify-center w-7 h-7 rounded-full bg-sky-100 border border-sky-300 text-sky-800 text-xs font-bold">7</span>
+        <h2 class="text-xl md:text-2xl font-bold text-stone-900">Frequently Asked Interview Questions</h2>
+      </div>
+
+      <div class="space-y-4">
+        <details class="bg-[#FAF8F5] border border-stone-200 rounded-xl p-4 text-xs group cursor-pointer" open>
+          <summary class="font-bold text-stone-900 flex items-center justify-between text-sm">
+            <span>❓ Why do we use `disc[next]` instead of `low[next]` on a back-edge?</span>
+            <span class="text-sky-700 group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <div class="mt-3 text-stone-700 leading-relaxed space-y-2">
+            <p>
+              In <code class="code-font text-purple-800 font-bold">else if (next != prev) low[curr] = Math.min(low[curr], disc[next]);</code>, why not <code class="code-font">low[next]</code>?
+            </p>
+            <p>
+              By definition, a path escaping a subtree is only valid if it uses <strong>at most ONE back edge</strong>. 
+              If you used <code class="code-font text-purple-800 font-bold">low[next]</code>, you might be propagating an anchor reached through a <em>second</em> back edge from <code class="code-font">next</code>, which would falsely suggest that <code class="code-font">curr</code> has an escape route when in reality cutting an ancestor edge would still isolate it. Using <code class="code-font text-purple-800 font-bold">disc[next]</code> guarantees you only reference the direct back edge anchor!
+            </p>
+          </div>
+        </details>
+
+        <details class="bg-[#FAF8F5] border border-stone-200 rounded-xl p-4 text-xs group cursor-pointer">
+          <summary class="font-bold text-stone-900 flex items-center justify-between text-sm">
+            <span>❓ Why do we check `if (next != prev)`?</span>
+            <span class="text-sky-700 group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <div class="mt-3 text-stone-700 leading-relaxed">
+            Because this is an <strong>undirected</strong> graph! When node 0 calls DFS on node 1, node 1's adjacency list contains node 0. 
+            If we didn't skip <code class="code-font">prev</code>, node 1 would consider the edge back to 0 as a "cycle", setting <code class="code-font">low[1] = disc[0]</code>, which would make it impossible to detect that edge (0, 1) was a bridge!
+          </div>
+        </details>
+
+        <details class="bg-[#FAF8F5] border border-stone-200 rounded-xl p-4 text-xs group cursor-pointer">
+          <summary class="font-bold text-stone-900 flex items-center justify-between text-sm">
+            <span>❓ What if the graph is disconnected initially?</span>
+            <span class="text-sky-700 group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <div class="mt-3 text-stone-700 leading-relaxed">
+            In LeetCode 1192, the problem statement guarantees the graph is connected initially. If a graph could have multiple disconnected components, you simply wrap the DFS in a loop: <code class="code-font">for (int i = 0; i &lt; n; i++) if (disc[i] == 0) dfs(i, -1);</code>.
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- ======================================================= -->
+    <!-- SECTION 7: INTERACTIVE KNOWLEDGE CHECK (QUIZ)           -->
+    <!-- ======================================================= -->
+    <section id="section-knowledge-check" class="bg-white border border-[#E6E0D6] rounded-2xl p-6 md:p-8 shadow-sm space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-200 pb-4">
+        <div class="flex items-center gap-3">
+          <span class="flex items-center justify-center w-7 h-7 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-bold">7</span>
+          <div>
+            <h2 class="text-xl md:text-2xl font-bold text-stone-900">Formative Knowledge Check</h2>
+            <p class="text-xs text-stone-600">Test your mastery of Tarjan's concepts before jumping into the code challenges.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="quiz-score-badge" class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-stone-100 border border-stone-200 text-stone-700">
+            Score: 0 / 3
+          </span>
+          <button id="reset-quiz-btn" class="text-xs px-2.5 py-1 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-stone-600 transition">
+            ↺ Reset
+          </button>
+        </div>
+      </div>
+
+      <div class="space-y-6 text-sm">
+        <!-- Question 1 -->
+        <div class="p-4 rounded-xl border border-stone-200 bg-[#FAF8F5] space-y-3" id="q1-card">
+          <div class="flex items-start justify-between gap-2">
+            <span class="font-bold text-stone-900">
+              1. What does the value <code class="code-font text-sky-800 bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200 text-xs">low[v]</code> strictly signify?
+            </span>
+            <span id="q1-status" class="text-xs font-bold shrink-0"></span>
+          </div>
+          <div class="grid grid-cols-1 gap-2 text-xs">
+            <button class="quiz-option text-left p-3 rounded-lg border border-stone-200 bg-white hover:border-sky-400 hover:bg-sky-50/40 transition" onclick="answerQuiz(1, 0)">
+              A) The shortest path hop-distance from root node 0 to node <em>v</em>.
+            </button>
+            <button class="quiz-option text-left p-3 rounded-lg border border-stone-200 bg-white hover:border-sky-400 hover:bg-sky-50/40 transition" onclick="answerQuiz(1, 1)">
+              B) The lowest discovery time reachable from <em>v</em>'s subtree using at most one back-edge (excluding the direct parent edge).
+            </button>
+            <button class="quiz-option text-left p-3 rounded-lg border border-stone-200 bg-white hover:border-sky-400 hover:bg-sky-50/40 transition" onclick="answerQuiz(1, 2)">
+              C) The total number of incoming directed edges connected to node <em>v</em>.
+            </button>
+            <button class="quiz-option text-left p-3 rounded-lg border border-stone-200 bg-white hover:border-sky-400 hover:bg-sky-50/40 transition" onclick="answerQuiz(1, 3)">
+              D) The minimum degree among all nodes in the current component.
+            </button>
+          </div>
+          <div id="q1-feedback" class="text-xs p-3 rounded-lg hidden leading-relaxed"></div>
+        </div>
+
+        <!-- Question 2 -->
+        <div class="p-4 rounded-xl border border-stone-200 bg-[#FAF8F5] space-y-3" id="q2-card">
+          <div class="flex items-start justify-between gap-2">
+            <span class="font-bold text-stone-900">
+              2. Why does <code class="code-font text-amber-900 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 text-xs">low[next] &gt; disc[curr]</code> prove that edge <em>(curr, next)</em> is a bridge?
+            </span>
+            <span id="q2-status" class="text-xs font-bold shrink-0"></span>
+          </div>
+          <div class="grid grid-cols-1 gap-2 text-xs">
+            <button class="quiz-option text-left p-3 rounded-lg border border-stone-200 bg-white hover:border-sky-400 hover:bg-sky-50/40 transition" onclick="answerQuiz(2, 0)">
+              A) Because <em>next</em> has a lower discovery timestamp than <em>curr</em>.
+            </button>
+            <button class="quiz-option text-left p-3 rounded-lg border border-stone-200 bg-white hover:border-sky-400 hover:bg-sky-50/40 transition" onclick="answerQuiz(2, 1)">
+              B) Because <em>next</em>'s entire subtree cannot reach <em>curr</em> or any ancestor of <em>curr</em> through any back-edge.
+            </button>
+            <button class="quiz-option text-left p-3 rounded-lg border border-stone-200 bg-white hover:border-sky-400 hover:bg-sky-50/40 transition" onclick="answerQuiz(2, 2)">
+              C) Because <em>next</em> is an articulation point connecting three or more cliques.
+            </button>
+            <button class="quiz-option text-left p-3 rounded-lg border border-stone-200 bg-white hover:border-sky-400 hover:bg-sky-50/40 transition" onclick="answerQuiz(2, 3)">
+              D) Because <em>(curr, next)</em> is guaranteed to be a chord inside a triangle.
+            </button>
+          </div>
+          <div id="q2-feedback" class="text-xs p-3 rounded-lg hidden leading-relaxed"></div>
+        </div>
+
+        <!-- Question 3 -->
+        <div class="p-4 rounded-xl border border-stone-200 bg-[#FAF8F5] space-y-3" id="q3-card">
+          <div class="flex items-start justify-between gap-2">
+            <span class="font-bold text-stone-900">
+              3. Why is Tarjan's algorithm $O(V + E)$ while the naive "remove & BFS" approach is $O(E \cdot (V + E))$?
+            </span>
+            <span id="q3-status" class="text-xs font-bold shrink-0"></span>
+          </div>
+          <div class="grid grid-cols-1 gap-2 text-xs">
+            <button class="quiz-option text-left p-3 rounded-lg border border-stone-200 bg-white hover:border-sky-400 hover:bg-sky-50/40 transition" onclick="answerQuiz(3, 0)">
+              A) The naive approach repeats an entire graph search for every single edge, while Tarjan computes reachability for all edges in one single DFS pass.
+            </button>
+            <button class="quiz-option text-left p-3 rounded-lg border border-stone-200 bg-white hover:border-sky-400 hover:bg-sky-50/40 transition" onclick="answerQuiz(3, 1)">
+              B) Tarjan replaces depth-first search with binary search over the edge adjacency list.
+            </button>
+            <button class="quiz-option text-left p-3 rounded-lg border border-stone-200 bg-white hover:border-sky-400 hover:bg-sky-50/40 transition" onclick="answerQuiz(3, 2)">
+              C) Tarjan only checks edges that have an odd degree.
+            </button>
+            <button class="quiz-option text-left p-3 rounded-lg border border-stone-200 bg-white hover:border-sky-400 hover:bg-sky-50/40 transition" onclick="answerQuiz(3, 3)">
+              D) The naive approach only works on trees, while Tarjan works on matrices.
+            </button>
+          </div>
+          <div id="q3-feedback" class="text-xs p-3 rounded-lg hidden leading-relaxed"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SECTION 8: 5 HANDS-ON ASSIGNMENTS          -->
+    <!-- ========================================== -->
+    <section id="section-assignments" class="bg-white border border-[#E6E0D6] rounded-2xl p-6 md:p-8 shadow-sm space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 rounded bg-amber-100 text-amber-800 border border-amber-300 text-xs font-mono font-bold">CORE CURRICULUM</span>
+            <h2 class="text-xl md:text-2xl font-extrabold text-stone-900">Hands-On Assignments (1 to 5)</h2>
+          </div>
+          <p class="text-xs text-stone-600 mt-1">
+            Explore each problem scenario below. Copy the network's nodes and edges to paste into the editor, and write your Java solution!
+          </p>
+        </div>
+
+        <div class="text-xs font-mono text-stone-600 bg-[#FAF8F5] px-3 py-1.5 rounded-lg border border-stone-200 self-start md:self-auto font-medium">
+          5 Unique Real-World Topologies
+        </div>
+      </div>
+
+      <!-- Grid of 5 Assignments -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+        <!-- Assignment 1 -->
+        <div class="bg-gradient-to-br from-amber-50 via-white to-amber-50/50 border-2 border-amber-500/70 rounded-xl p-5 shadow-xs flex flex-col justify-between hover:border-amber-600 transition relative overflow-hidden group">
+          <div class="space-y-3 pt-2">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🚆</span>
+              <span class="text-xs font-mono text-amber-800 font-bold uppercase">Assignment 1</span>
+            </div>
+            <h3 class="text-base font-bold text-stone-900 group-hover:text-amber-700 transition">
+              National Railway Critical Tracks
+            </h3>
+            <p class="text-xs text-stone-600 leading-relaxed">
+              16 passenger rail stations across 4 regional commuter hubs with mountain passes and coastal choke points. Identify the critical tracks!
+            </p>
+            <div class="flex flex-wrap items-center gap-2 text-[11px] font-mono text-stone-600">
+              <span class="bg-white px-2 py-0.5 rounded border border-stone-200 shadow-xs">16 Stations</span>
+              <span class="bg-white px-2 py-0.5 rounded border border-stone-200 shadow-xs">20 Tracks</span>
+              <span class="text-amber-800 font-semibold">Bridges Challenge</span>
+            </div>
+          </div>
+
+          <div class="pt-5">
+            <a href="/assignment/1" class="w-full text-center bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs py-2.5 rounded-lg shadow-xs transition flex items-center justify-center gap-1.5">
+              <span>View Assignment 1</span>
+              <span>➔</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Assignment 2 -->
+        <div class="bg-[#FAF8F5] border border-stone-200 rounded-xl p-5 shadow-xs flex flex-col justify-between hover:border-stone-400 transition group">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-xl">🏔️</span>
+                <span class="text-xs font-mono text-amber-800 font-bold uppercase">Assignment 2</span>
+              </div>
+              <span class="text-[10px] font-mono text-stone-600 bg-white px-2 py-0.5 rounded border border-stone-200 font-medium">Medium</span>
+            </div>
+            <h3 class="text-base font-bold text-stone-900 group-hover:text-amber-700 transition">
+              Hill Station Landslide Chokepoints
+            </h3>
+            <p class="text-xs text-stone-600 leading-relaxed">
+              14 cottages and tea estates in a mountain hill station connected by ridge roads. Identify vulnerable roads where landslides would isolate houses!
+            </p>
+            <div class="flex flex-wrap items-center gap-2 text-[11px] font-mono text-stone-600">
+              <span class="bg-white px-2 py-0.5 rounded border border-stone-200 shadow-xs">14 Houses</span>
+              <span class="bg-white px-2 py-0.5 rounded border border-stone-200 shadow-xs">18 Mountain Roads</span>
+            </div>
+          </div>
+
+          <div class="pt-5">
+            <a href="/assignment/2" class="w-full text-center bg-stone-900 hover:bg-stone-800 text-stone-50 font-semibold text-xs py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow-xs">
+              <span>View Assignment 2 Spec</span>
+              <span>➔</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Assignment 3 -->
+        <div class="bg-[#FAF8F5] border border-stone-200 rounded-xl p-5 shadow-xs flex flex-col justify-between hover:border-stone-400 transition group">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-xl">👥</span>
+                <span class="text-xs font-mono text-indigo-800 font-bold uppercase">Assignment 3</span>
+              </div>
+              <span class="text-[10px] font-mono text-stone-600 bg-white px-2 py-0.5 rounded border border-stone-200 font-medium">Medium</span>
+            </div>
+            <h3 class="text-base font-bold text-stone-900 group-hover:text-indigo-800 transition">
+              Social Network Community Bridges
+            </h3>
+            <p class="text-xs text-stone-600 leading-relaxed">
+              15 students in university clubs (Robotics, Band, Sports, Debate). Identify bridge friendships whose break isolates student subcultures!
+            </p>
+            <div class="flex flex-wrap items-center gap-2 text-[11px] font-mono text-stone-600">
+              <span class="bg-white px-2 py-0.5 rounded border border-stone-200 shadow-xs">15 Students</span>
+              <span class="bg-white px-2 py-0.5 rounded border border-stone-200 shadow-xs">20 Friendships</span>
+            </div>
+          </div>
+
+          <div class="pt-5">
+            <a href="/assignment/3" class="w-full text-center bg-stone-900 hover:bg-stone-800 text-stone-50 font-semibold text-xs py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow-xs">
+              <span>View Assignment 3 Spec</span>
+              <span>➔</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Assignment 4 -->
+        <div class="bg-[#FAF8F5] border border-stone-200 rounded-xl p-5 shadow-xs flex flex-col justify-between hover:border-stone-400 transition group">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-xl">📡</span>
+                <span class="text-xs font-mono text-sky-800 font-bold uppercase">Assignment 4</span>
+              </div>
+              <span class="text-[10px] font-mono text-stone-600 bg-white px-2 py-0.5 rounded border border-stone-200 font-medium">Hard</span>
+            </div>
+            <h3 class="text-base font-bold text-stone-900 group-hover:text-sky-800 transition">
+              Precision Agriculture IoT Sensor Mesh
+            </h3>
+            <p class="text-xs text-stone-600 leading-relaxed">
+              16 solar telemetry nodes across a terraced hillside vineyard monitoring soil moisture & sap flow. Find critical radio links required for irrigation!
+            </p>
+            <div class="flex flex-wrap items-center gap-2 text-[11px] font-mono text-stone-600">
+              <span class="bg-white px-2 py-0.5 rounded border border-stone-200 shadow-xs">16 IoT Sensors</span>
+              <span class="bg-white px-2 py-0.5 rounded border border-stone-200 shadow-xs">21 Wireless Links</span>
+            </div>
+          </div>
+
+          <div class="pt-5">
+            <a href="/assignment/4" class="w-full text-center bg-stone-900 hover:bg-stone-800 text-stone-50 font-semibold text-xs py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow-xs">
+              <span>View Assignment 4 Spec</span>
+              <span>➔</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Assignment 5 -->
+        <div class="bg-[#FAF8F5] border border-stone-200 rounded-xl p-5 shadow-xs flex flex-col justify-between hover:border-stone-400 transition group md:col-span-2 lg:col-span-1">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-xl">🏢</span>
+                <span class="text-xs font-mono text-purple-800 font-bold uppercase">Assignment 5</span>
+              </div>
+              <span class="text-[10px] font-mono text-stone-600 bg-white px-2 py-0.5 rounded border border-stone-200 font-medium">Hard</span>
+            </div>
+            <h3 class="text-base font-bold text-stone-900 group-hover:text-purple-800 transition">
+              Corporate Enterprise Network Core Hub
+            </h3>
+            <p class="text-xs text-stone-600 leading-relaxed">
+              16 datacenter switches and branch departments (HQ, Finance, Engineering, Cold Vault). Pinpoint critical fiber trunks required to prevent partitioning!
+            </p>
+            <div class="flex flex-wrap items-center gap-2 text-[11px] font-mono text-stone-600">
+              <span class="bg-white px-2 py-0.5 rounded border border-stone-200 shadow-xs">16 Hubs</span>
+              <span class="bg-white px-2 py-0.5 rounded border border-stone-200 shadow-xs">21 Fiber Trunks</span>
+            </div>
+          </div>
+
+          <div class="pt-5">
+            <a href="/assignment/5" class="w-full text-center bg-stone-900 hover:bg-stone-800 text-stone-50 font-semibold text-xs py-2.5 rounded-lg transition flex items-center justify-center gap-1.5 shadow-xs">
+              <span>View Assignment 5 Spec</span>
+              <span>➔</span>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- AT THE VERY LAST: GRAPHSTUDIO EDITOR LINK  -->
+    <!-- ========================================== -->
+    <div class="text-center bg-gradient-to-br from-amber-50/70 via-stone-50 to-sky-50 border-2 border-stone-300 rounded-2xl p-8 md:p-10 shadow-sm relative overflow-hidden">
+      <div class="max-w-2xl mx-auto space-y-4">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-stone-300 text-stone-800 text-xs font-mono font-bold shadow-xs">
+          <span>⚡ CORE WORKSPACE</span>
+        </div>
+        <h3 class="text-2xl md:text-3xl font-extrabold text-stone-900">GraphStudio Interactive Editor & Code Tutor</h3>
+        <p class="text-stone-700 text-sm leading-relaxed">
+          Copy the nodes and edges from any assignment above and paste them directly into the GraphStudio Editor! 
+          Step through Tarjan's recursion stack line-by-line, observe discovery times and low-link values update in real-time, and verify your solutions interactively.
+        </p>
+        <div class="pt-3">
+          <a href="/editor" class="bg-stone-900 hover:bg-stone-800 text-stone-50 font-extrabold text-sm px-8 py-3.5 rounded-xl shadow-md transition-transform hover:scale-105 inline-flex items-center gap-2">
+            <span>🚀</span>
+            <span>Launch GraphStudio Editor & Code Tutor</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="border-t border-[#E6E0D6] py-6 text-center text-xs text-stone-500">
+    GraphStudio • Educational Explainer for Tarjan's Bridge-Finding Algorithm
+  </footer>
+
+  <!-- Interactive Scripts -->
+  <script>
+    // ==========================================
+    // 1. Interactive Demo: Click edge to cut
+    // ==========================================
+    const cutFeedback = document.getElementById('cut-feedback-msg');
+    const resetCutBtn = document.getElementById('reset-bridge-cut-btn');
+    const allSimEdges = document.querySelectorAll('.sim-edge');
+    const bridgeLabelBg = document.getElementById('bridge-label-bg');
+    const bridgeLabelTxt = document.getElementById('bridge-label-txt');
+
+    const nodesClusterA = [document.getElementById('cut-node-0'), document.getElementById('cut-node-1'), document.getElementById('cut-node-2')];
+    const nodesClusterB = [document.getElementById('cut-node-3'), document.getElementById('cut-node-4'), document.getElementById('cut-node-5')];
+
+    function resetCutGraph() {
+      allSimEdges.forEach(e => {
+        e.style.opacity = '1';
+        e.style.strokeDasharray = 'none';
+        if (e.id === 'cut-edge-1-3') {
+          e.setAttribute('stroke', '#DC2626');
+          e.setAttribute('stroke-width', '4');
+        } else {
+          e.setAttribute('stroke', '#94A3B8');
+          e.setAttribute('stroke-width', '3');
+        }
+      });
+      nodesClusterA.forEach(n => {
+        n.querySelector('circle').setAttribute('stroke', '#0284C7');
+        n.querySelector('circle').setAttribute('fill', '#FFFFFF');
+      });
+      nodesClusterB.forEach(n => {
+        n.querySelector('circle').setAttribute('stroke', '#D97706');
+        n.querySelector('circle').setAttribute('fill', '#FFFFFF');
+      });
+      if (bridgeLabelBg) bridgeLabelBg.style.display = 'block';
+      if (bridgeLabelTxt) bridgeLabelTxt.style.display = 'block';
+      cutFeedback.innerHTML = 'Click on any edge to see if removing it splits the graph into two!';
+      cutFeedback.className = 'mt-3 text-xs text-center font-medium text-stone-700 min-h-[36px] flex items-center justify-center px-2';
+    }
+
+    allSimEdges.forEach(edge => {
+      edge.addEventListener('click', () => {
+        const isBridge = edge.id === 'cut-edge-1-3';
+        edge.style.opacity = '0.2';
+        edge.style.strokeDasharray = '4,4';
+
+        if (isBridge) {
+          if (bridgeLabelBg) bridgeLabelBg.style.display = 'none';
+          if (bridgeLabelTxt) bridgeLabelTxt.style.display = 'none';
+
+          nodesClusterA.forEach(n => {
+            n.querySelector('circle').setAttribute('stroke', '#0284C7');
+            n.querySelector('circle').setAttribute('fill', '#E0F2FE');
+          });
+          nodesClusterB.forEach(n => {
+            n.querySelector('circle').setAttribute('stroke', '#DC2626');
+            n.querySelector('circle').setAttribute('fill', '#FEE2E2');
+          });
+
+          cutFeedback.innerHTML = '<span class="text-rose-700 font-bold">💥 CRITICAL BRIDGE CUT!</span>&nbsp;Graph shattered into 2 isolated subgraphs: Component {0,1,2} and Component {3,4,5}.';
+          cutFeedback.className = 'mt-3 text-xs text-center font-medium text-rose-800 bg-rose-50 border border-rose-200 p-2 rounded-lg min-h-[36px] flex items-center justify-center px-2';
+        } else {
+          cutFeedback.innerHTML = '<span class="text-emerald-700 font-bold">✓ Safe Cut!</span>&nbsp;This edge is inside a cycle. An alternative path exists, so the graph remains 100% connected. NOT a bridge.';
+          cutFeedback.className = 'mt-3 text-xs text-center font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 p-2 rounded-lg min-h-[36px] flex items-center justify-center px-2';
+        }
+      });
+    });
+
+    if (resetCutBtn) resetCutBtn.addEventListener('click', resetCutGraph);
+
+
+    // ========================================================
+    // 2. DUAL-METHOD INTERACTIVE WALKTHROUGH (NAIVE VS TARJAN)
+    // ========================================================
+    let currentAlgorithmMode = 'naive'; // 'naive' or 'tarjan'
+    let currentStepIndex = 0;
+
+    // --- Naive Simulation Step Definitions ---
+    const naiveSteps = [
+      {
+        stepNum: 1,
+        title: "Naive Step 1: Initial Graph & Edge List",
+        body: "The graph has 4 vertices and 4 edges: (0,1), (1,2), (2,0), and (1,3). The Naive algorithm must sequentially delete each edge one by one, execute a complete BFS/DFS reachability sweep from node 0, verify if count == 4, and restore the edge.",
+        testedEdge: null,
+        cutEdge: null,
+        scissorsPos: null,
+        reachable: "4 / 4 (All)",
+        bridges: "None",
+        bfsRuns: "0 / 4 Runs",
+        edgeColors: { "0-1": "#94A3B8", "1-2": "#94A3B8", "2-0": "#94A3B8", "1-3": "#94A3B8" },
+        nodeColors: { 0: "#0284C7", 1: "#0284C7", 2: "#0284C7", 3: "#0284C7" },
+        nodeLabels: { 0: "", 1: "", 2: "", 3: "" },
+        pills: "Pending Edge Loop"
+      },
+      {
+        stepNum: 2,
+        title: "Naive Step 2: Delete & Test Edge (0, 1)",
+        body: "Temporarily delete edge (0, 1). Run BFS starting at node 0: visits 0 ➔ 2 ➔ 1 ➔ 3. Reachable vertices: {0, 1, 2, 3} (4/4 nodes). Because all nodes are still reachable via cycle bypass 0-2-1, edge (0, 1) is NOT a bridge. Restore edge (0, 1).",
+        testedEdge: "0-1",
+        cutEdge: "0-1",
+        scissorsPos: { x: 135, y: 80 },
+        reachable: "4 / 4 (All Reachable)",
+        bridges: "None",
+        bfsRuns: "1 / 4 Runs",
+        edgeColors: { "0-1": "#DC2626", "1-2": "#059669", "2-0": "#059669", "1-3": "#059669" },
+        nodeColors: { 0: "#0284C7", 1: "#059669", 2: "#059669", 3: "#059669" },
+        nodeLabels: { 0: "root", 1: "BFS-2", 2: "BFS-1", 3: "BFS-3" },
+        pills: "Cutting (0, 1) ➔ BFS OK"
+      },
+      {
+        stepNum: 3,
+        title: "Naive Step 3: Delete & Test Edge (1, 2)",
+        body: "Temporarily delete edge (1, 2). Run BFS starting at node 0: visits 0 ➔ 1 ➔ 3 and 0 ➔ 2. Reachable vertices: {0, 1, 2, 3} (4/4 nodes). The graph remains fully connected. Therefore, edge (1, 2) is NOT a bridge. Restore edge (1, 2).",
+        testedEdge: "1-2",
+        cutEdge: "1-2",
+        scissorsPos: { x: 135, y: 120 },
+        reachable: "4 / 4 (All Reachable)",
+        bridges: "None",
+        bfsRuns: "2 / 4 Runs",
+        edgeColors: { "0-1": "#059669", "1-2": "#DC2626", "2-0": "#059669", "1-3": "#059669" },
+        nodeColors: { 0: "#0284C7", 1: "#059669", 2: "#059669", 3: "#059669" },
+        nodeLabels: { 0: "root", 1: "BFS-1", 2: "BFS-1", 3: "BFS-2" },
+        pills: "Cutting (1, 2) ➔ BFS OK"
+      },
+      {
+        stepNum: 4,
+        title: "Naive Step 4: Delete & Test Edge (2, 0)",
+        body: "Temporarily delete edge (2, 0). Run BFS starting at node 0: visits 0 ➔ 1 ➔ 2 and 1 ➔ 3. Reachable vertices: {0, 1, 2, 3} (4/4 nodes). All nodes reached via path 0-1-2. Edge (2, 0) is NOT a bridge. Restore edge (2, 0).",
+        testedEdge: "2-0",
+        cutEdge: "2-0",
+        scissorsPos: { x: 80, y: 100 },
+        reachable: "4 / 4 (All Reachable)",
+        bridges: "None",
+        bfsRuns: "3 / 4 Runs",
+        edgeColors: { "0-1": "#059669", "1-2": "#059669", "2-0": "#DC2626", "1-3": "#059669" },
+        nodeColors: { 0: "#0284C7", 1: "#059669", 2: "#059669", 3: "#059669" },
+        nodeLabels: { 0: "root", 1: "BFS-1", 2: "BFS-2", 3: "BFS-2" },
+        pills: "Cutting (2, 0) ➔ BFS OK"
+      },
+      {
+        stepNum: 5,
+        title: "Naive Step 5: Delete & Test Edge (1, 3) — BRIDGE FOUND!",
+        body: "Temporarily delete edge (1, 3). Run BFS from 0: visits {0, 1, 2}. Node 3 CANNOT be reached by any path! Reachable count: 3 / 4 (< N). Deleting (1, 3) splits the graph! Edge (1, 3) is a CRITICAL BRIDGE! Restore edge.",
+        testedEdge: "1-3",
+        cutEdge: "1-3",
+        scissorsPos: { x: 250, y: 100 },
+        reachable: "⚠️ 3 / 4 (Node 3 Isolated!)",
+        bridges: "[1, 3]",
+        bfsRuns: "4 / 4 Runs",
+        edgeColors: { "0-1": "#059669", "1-2": "#059669", "2-0": "#059669", "1-3": "#DC2626" },
+        nodeColors: { 0: "#0284C7", 1: "#0284C7", 2: "#0284C7", 3: "#DC2626" },
+        nodeLabels: { 0: "root", 1: "BFS-1", 2: "BFS-1", 3: "ISOLATED" },
+        pills: "Cutting (1, 3) ➔ 💥 BRIDGE!"
+      },
+      {
+        stepNum: 6,
+        title: "Naive Step 6: Method Complete",
+        body: "Completed all 4 edge deletions with 4 full BFS traversals. Total bridges found: [[1, 3]]. Cost: 4 edge cuts × 4 BFS sweeps = 16 node/edge explorations. On 100,000 edges, this causes 20 billion operations and guaranteed TLE!",
+        testedEdge: null,
+        cutEdge: null,
+        scissorsPos: null,
+        reachable: "4 / 4 (Restored)",
+        bridges: "[[1, 3]]",
+        bfsRuns: "4 Full BFS Runs Done",
+        edgeColors: { "0-1": "#059669", "1-2": "#059669", "2-0": "#059669", "1-3": "#DC2626" },
+        nodeColors: { 0: "#0284C7", 1: "#0284C7", 2: "#0284C7", 3: "#D97706" },
+        nodeLabels: { 0: "", 1: "", 2: "", 3: "" },
+        pills: "Done • 4 Full Passes"
+      }
+    ];
+
+    // --- Tarjan Simulation Step Definitions ---
+    const tarjanSteps = [
+      {
+        stepNum: 1,
+        title: "Tarjan Step 1: Enter Root Node 0",
+        body: "DFS begins at root node 0 with prev = -1. We assign discovery timestamp and initial low-link: disc[0] = low[0] = 1.",
+        stack: ["0"],
+        activeNode: 0,
+        nodes: { 0: { d: 1, l: 1 }, 1: { d: "-", l: "-" }, 2: { d: "-", l: "-" }, 3: { d: "-", l: "-" } },
+        edges: { "0-1": "#CBD5E1", "1-2": "#CBD5E1", "2-0": "#CBD5E1", "1-3": "#CBD5E1" },
+        bridges: "None",
+        efficiencyTag: "1 Single DFS Pass (0 Deletions)"
+      },
+      {
+        stepNum: 2,
+        title: "Tarjan Step 2: Tree Edge 0 ➔ 1",
+        body: "Node 1 is unvisited (disc[1] == 0). DFS recursively explores child 1 via dfs(1, 0). Timestamp: disc[1] = low[1] = 2.",
+        stack: ["0", "1"],
+        activeNode: 1,
+        nodes: { 0: { d: 1, l: 1 }, 1: { d: 2, l: 2 }, 2: { d: "-", l: "-" }, 3: { d: "-", l: "-" } },
+        edges: { "0-1": "#0284C7", "1-2": "#CBD5E1", "2-0": "#CBD5E1", "1-3": "#CBD5E1" },
+        bridges: "None",
+        efficiencyTag: "1 Single DFS Pass (0 Deletions)"
+      },
+      {
+        stepNum: 3,
+        title: "Tarjan Step 3: Tree Edge 1 ➔ 2",
+        body: "Node 2 is unvisited. DFS calls dfs(2, 1). Timestamp: disc[2] = low[2] = 3.",
+        stack: ["0", "1", "2"],
+        activeNode: 2,
+        nodes: { 0: { d: 1, l: 1 }, 1: { d: 2, l: 2 }, 2: { d: 3, l: 3 }, 3: { d: "-", l: "-" } },
+        edges: { "0-1": "#0284C7", "1-2": "#0284C7", "2-0": "#CBD5E1", "1-3": "#CBD5E1" },
+        bridges: "None",
+        efficiencyTag: "1 Single DFS Pass (0 Deletions)"
+      },
+      {
+        stepNum: 4,
+        title: "Tarjan Step 4: Back-Edge 2 ➔ 0 Detected!",
+        body: "From 2, we inspect neighbor 0. Since disc[0] != 0 and 0 != prev(1), edge (2, 0) is a BACK-EDGE! We update low[2] = min(low[2], disc[0]) = min(3, 1) = 1. Node 2 knows it can escape to root 0!",
+        stack: ["0", "1", "2"],
+        activeNode: 2,
+        nodes: { 0: { d: 1, l: 1 }, 1: { d: 2, l: 2 }, 2: { d: 3, l: 1 }, 3: { d: "-", l: "-" } },
+        edges: { "0-1": "#0284C7", "1-2": "#0284C7", "2-0": "#7C3AED", "1-3": "#CBD5E1" },
+        bridges: "None",
+        efficiencyTag: "1 Single DFS Pass (0 Deletions)"
+      },
+      {
+        stepNum: 5,
+        title: "Tarjan Step 5: Backtrack to 1 (Safe Cycle on 1-2)",
+        body: "dfs(2) finishes. In node 1: low[1] = min(low[1], low[2]) = min(2, 1) = 1. Check bridge condition: is low[2] (1) > disc[1] (2)? 1 > 2 is FALSE! Edge (1, 2) is part of a cycle, NOT a bridge.",
+        stack: ["0", "1"],
+        activeNode: 1,
+        nodes: { 0: { d: 1, l: 1 }, 1: { d: 2, l: 1 }, 2: { d: 3, l: 1 }, 3: { d: "-", l: "-" } },
+        edges: { "0-1": "#0284C7", "1-2": "#059669", "2-0": "#7C3AED", "1-3": "#CBD5E1" },
+        bridges: "None",
+        efficiencyTag: "1 Single DFS Pass (0 Deletions)"
+      },
+      {
+        stepNum: 6,
+        title: "Tarjan Step 6: Tree Edge 1 ➔ 3",
+        body: "From 1, next neighbor is 3 (unvisited). DFS calls dfs(3, 1). Timestamp: disc[3] = low[3] = 4.",
+        stack: ["0", "1", "3"],
+        activeNode: 3,
+        nodes: { 0: { d: 1, l: 1 }, 1: { d: 2, l: 1 }, 2: { d: 3, l: 1 }, 3: { d: 4, l: 4 } },
+        edges: { "0-1": "#0284C7", "1-2": "#059669", "2-0": "#7C3AED", "1-3": "#0284C7" },
+        bridges: "None",
+        efficiencyTag: "1 Single DFS Pass (0 Deletions)"
+      },
+      {
+        stepNum: 7,
+        title: "Tarjan Step 7: Backtrack to 1 (BRIDGE DETECTED!)",
+        body: "dfs(3) has no other neighbors and finishes with low[3] = 4. Backtrack to 1. Check bridge condition: is low[3] (4) > disc[1] (2)? 4 > 2 is TRUE! Edge (1, 3) is a CRITICAL BRIDGE!",
+        stack: ["0", "1"],
+        activeNode: 1,
+        nodes: { 0: { d: 1, l: 1 }, 1: { d: 2, l: 1 }, 2: { d: 3, l: 1 }, 3: { d: 4, l: 4 } },
+        edges: { "0-1": "#0284C7", "1-2": "#059669", "2-0": "#7C3AED", "1-3": "#DC2626" },
+        bridges: "[1, 3]",
+        efficiencyTag: "1 Single DFS Pass (0 Deletions)"
+      },
+      {
+        stepNum: 8,
+        title: "Tarjan Step 8: Complete DFS Backtrack to 0",
+        body: "DFS finishes all nodes. low[0] = min(low[0], low[1]) = min(1, 1) = 1. Check edge (0, 1): is low[1] (1) > disc[0] (1)? 1 > 1 is FALSE. Total bridges found: [[1, 3]]. Done in O(V + E) single pass without deleting a single edge!",
+        stack: [],
+        activeNode: -1,
+        nodes: { 0: { d: 1, l: 1 }, 1: { d: 2, l: 1 }, 2: { d: 3, l: 1 }, 3: { d: 4, l: 4 } },
+        edges: { "0-1": "#059669", "1-2": "#059669", "2-0": "#7C3AED", "1-3": "#DC2626" },
+        bridges: "[[1, 3]]",
+        efficiencyTag: "1 Single DFS Pass (0 Deletions)"
+      }
+    ];
+
+    // DOM Elements for Dual Sim
+    const btnModeNaive = document.getElementById('btn-mode-naive');
+    const btnModeTarjan = document.getElementById('btn-mode-tarjan');
+    const algoComplexityBadge = document.getElementById('algo-complexity-badge');
+    const dualSimPrevBtn = document.getElementById('dual-sim-prev-btn');
+    const dualSimNextBtn = document.getElementById('dual-sim-next-btn');
+    const dualSimResetBtn = document.getElementById('dual-sim-reset-btn');
+    const dualSimStepBadge = document.getElementById('dual-sim-step-badge');
+    const dynamicInfoLabel = document.getElementById('dynamic-info-label');
+    const dynamicInfoPills = document.getElementById('dynamic-info-pills');
+    const dualSimDescTitle = document.getElementById('dual-sim-desc-title');
+    const dualSimDescBody = document.getElementById('dual-sim-desc-body');
+    const dualSimEfficiencyTag = document.getElementById('dual-sim-efficiency-tag');
+    const dualSimReachableDisplay = document.getElementById('dual-sim-reachable-display');
+    const dualSimBridgesFound = document.getElementById('dual-sim-bridges-found');
+    const cutScissorsMarker = document.getElementById('cut-scissors-marker');
+
+    function renderCurrentModeStep() {
+      const isNaive = currentAlgorithmMode === 'naive';
+      const steps = isNaive ? naiveSteps : tarjanSteps;
+      const step = steps[currentStepIndex];
+
+      dualSimStepBadge.textContent = `Step ${step.stepNum} of ${steps.length}`;
+      dualSimDescTitle.textContent = step.title;
+      dualSimDescBody.textContent = step.body;
+      dualSimBridgesFound.textContent = step.bridges;
+
+      if (step.bridges.includes('1, 3')) {
+        dualSimBridgesFound.className = 'font-bold text-rose-700 text-sm';
+      } else {
+        dualSimBridgesFound.className = 'font-bold text-stone-700';
+      }
+
+      if (isNaive) {
+        // Naive Rendering
+        dualSimDescTitle.className = 'font-bold text-sm text-rose-800';
+        dualSimEfficiencyTag.className = 'text-[11px] font-mono bg-rose-50 border border-rose-200 text-rose-800 px-2 py-0.5 rounded font-semibold';
+        dualSimEfficiencyTag.textContent = step.bfsRuns;
+        dualSimStepBadge.className = 'bg-white border border-rose-200 text-rose-800 text-xs font-mono font-bold px-3 py-1 rounded-lg shadow-xs';
+        dualSimReachableDisplay.textContent = step.reachable;
+        if (step.reachable.includes('Isolated')) {
+          dualSimReachableDisplay.className = 'font-bold text-rose-700';
+        } else {
+          dualSimReachableDisplay.className = 'font-bold text-stone-800';
+        }
+
+        dynamicInfoLabel.textContent = 'Tested Edge:';
+        dynamicInfoPills.innerHTML = `<span class="bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 rounded text-[11px] font-mono font-bold">${step.pills}</span>`;
+
+        // Cut Scissors Marker
+        if (step.scissorsPos) {
+          cutScissorsMarker.style.display = 'block';
+          cutScissorsMarker.setAttribute('transform', `translate(${step.scissorsPos.x}, ${step.scissorsPos.y})`);
+        } else {
+          cutScissorsMarker.style.display = 'none';
+        }
+
+        // Nodes
+        [0, 1, 2, 3].forEach(id => {
+          const circle = document.getElementById(`sim-circle-${id}`);
+          const badge = document.getElementById(`sim-badge-${id}`);
+          badge.textContent = step.nodeLabels[id];
+          circle.setAttribute('stroke', step.nodeColors[id]);
+          circle.setAttribute('stroke-width', '2.5');
+          if (step.nodeColors[id] === '#DC2626') {
+            circle.setAttribute('fill', '#FEE2E2');
+          } else if (step.nodeColors[id] === '#059669') {
+            circle.setAttribute('fill', '#ECFDF5');
+          } else {
+            circle.setAttribute('fill', '#FFFFFF');
+          }
+        });
+
+        // Edges
+        ['0-1', '1-2', '2-0', '1-3'].forEach(edgeKey => {
+          const line = document.getElementById(`sim-edge-${edgeKey}`);
+          line.setAttribute('stroke', step.edgeColors[edgeKey]);
+          if (step.cutEdge === edgeKey) {
+            line.style.opacity = '0.25';
+            line.style.strokeDasharray = '5,4';
+            line.setAttribute('stroke-width', '4');
+          } else {
+            line.style.opacity = '1';
+            line.style.strokeDasharray = 'none';
+            line.setAttribute('stroke-width', '3');
+          }
+        });
+
+      } else {
+        // Tarjan Rendering
+        cutScissorsMarker.style.display = 'none';
+        dualSimDescTitle.className = 'font-bold text-sm text-sky-800';
+        dualSimEfficiencyTag.className = 'text-[11px] font-mono bg-sky-50 border border-sky-200 text-sky-800 px-2 py-0.5 rounded font-semibold';
+        dualSimEfficiencyTag.textContent = step.efficiencyTag;
+        dualSimStepBadge.className = 'bg-white border border-sky-200 text-sky-800 text-xs font-mono font-bold px-3 py-1 rounded-lg shadow-xs';
+        dualSimReachableDisplay.textContent = '1 Single DFS Pass';
+        dualSimReachableDisplay.className = 'font-bold text-emerald-700';
+
+        dynamicInfoLabel.textContent = 'Call Stack:';
+        dynamicInfoPills.innerHTML = '';
+        if (step.stack.length === 0) {
+          dynamicInfoPills.innerHTML = '<span class="text-stone-400 font-normal">(empty)</span>';
+        } else {
+          step.stack.forEach(nodeId => {
+            const pill = document.createElement('span');
+            pill.className = 'bg-sky-50 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded text-[10px] font-bold';
+            pill.textContent = `dfs(${nodeId})`;
+            dynamicInfoPills.appendChild(pill);
+          });
+        }
+
+        // Nodes
+        [0, 1, 2, 3].forEach(id => {
+          const circle = document.getElementById(`sim-circle-${id}`);
+          const badge = document.getElementById(`sim-badge-${id}`);
+          const nData = step.nodes[id];
+          badge.textContent = `[d:${nData.d} l:${nData.l}]`;
+
+          if (step.activeNode === id) {
+            circle.setAttribute('stroke', '#0284C7');
+            circle.setAttribute('stroke-width', '3.5');
+            circle.setAttribute('fill', '#E0F2FE');
+          } else if (nData.d !== "-") {
+            circle.setAttribute('stroke', '#64748B');
+            circle.setAttribute('stroke-width', '2.5');
+            circle.setAttribute('fill', '#FFFFFF');
+          } else {
+            circle.setAttribute('stroke', '#CBD5E1');
+            circle.setAttribute('stroke-width', '2');
+            circle.setAttribute('fill', '#FAF8F5');
+          }
+        });
+
+        // Edges
+        ['0-1', '1-2', '2-0', '1-3'].forEach(edgeKey => {
+          const line = document.getElementById(`sim-edge-${edgeKey}`);
+          line.style.opacity = '1';
+          line.style.strokeDasharray = 'none';
+          line.setAttribute('stroke', step.edges[edgeKey]);
+          if (step.edges[edgeKey] === "#DC2626") {
+            line.setAttribute('stroke-width', '5');
+          } else {
+            line.setAttribute('stroke-width', '3');
+          }
+        });
+      }
+    }
+
+    function switchAlgorithmMode(mode) {
+      currentAlgorithmMode = mode;
+      currentStepIndex = 0;
+      if (mode === 'naive') {
+        btnModeNaive.className = 'px-3.5 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1.5 bg-rose-600 text-white shadow-xs';
+        btnModeTarjan.className = 'px-3.5 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1.5 text-stone-600 hover:text-stone-900';
+        algoComplexityBadge.className = 'bg-rose-100 text-rose-800 border border-rose-300 font-bold px-2.5 py-1 rounded-full';
+        algoComplexityBadge.textContent = 'Time: O(E × (V + E))';
+        dualSimNextBtn.className = 'bg-rose-600 hover:bg-rose-500 text-white px-4 py-1.5 rounded-lg text-xs font-semibold transition shadow-xs flex items-center gap-1';
+      } else {
+        btnModeTarjan.className = 'px-3.5 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1.5 bg-sky-600 text-white shadow-xs';
+        btnModeNaive.className = 'px-3.5 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1.5 text-stone-600 hover:text-stone-900';
+        algoComplexityBadge.className = 'bg-sky-100 text-sky-800 border border-sky-300 font-bold px-2.5 py-1 rounded-full';
+        algoComplexityBadge.textContent = 'Time: O(V + E) [Optimal]';
+        dualSimNextBtn.className = 'bg-sky-600 hover:bg-sky-500 text-white px-4 py-1.5 rounded-lg text-xs font-semibold transition shadow-xs flex items-center gap-1';
+      }
+      renderCurrentModeStep();
+    }
+
+    if (btnModeNaive) btnModeNaive.addEventListener('click', () => switchAlgorithmMode('naive'));
+    if (btnModeTarjan) btnModeTarjan.addEventListener('click', () => switchAlgorithmMode('tarjan'));
+
+    if (dualSimNextBtn) {
+      dualSimNextBtn.addEventListener('click', () => {
+        const steps = currentAlgorithmMode === 'naive' ? naiveSteps : tarjanSteps;
+        if (currentStepIndex < steps.length - 1) {
+          currentStepIndex++;
+          renderCurrentModeStep();
+        }
+      });
+    }
+
+    if (dualSimPrevBtn) {
+      dualSimPrevBtn.addEventListener('click', () => {
+        if (currentStepIndex > 0) {
+          currentStepIndex--;
+          renderCurrentModeStep();
+        }
+      });
+    }
+
+    if (dualSimResetBtn) {
+      dualSimResetBtn.addEventListener('click', () => {
+        currentStepIndex = 0;
+        renderCurrentModeStep();
+      });
+    }
+
+    // Initialize initial step
+    renderCurrentModeStep();
+
+
+    // ==========================================
+    // 3. Interactive Escape Route Visualizer
+    // ==========================================
+    let hasBackEdge = false;
+    const toggleBackEdgeBtn = document.getElementById('toggle-backedge-btn');
+    const erBackEdge = document.getElementById('er-back-edge');
+    const erLowText = document.getElementById('er-low-text');
+    const erBadgeBg = document.getElementById('er-badge-bg');
+    const erBadgeTxt = document.getElementById('er-badge-txt');
+    const erTreeEdge = document.getElementById('er-tree-edge');
+    const erExplCard = document.getElementById('er-explanation-card');
+    const erStatusIcon = document.getElementById('er-status-icon');
+    const erStatusTitle = document.getElementById('er-status-title');
+    const erLowCalc = document.getElementById('er-low-calc');
+    const erCompareCalc = document.getElementById('er-compare-calc');
+    const erDescText = document.getElementById('er-desc-text');
+
+    function updateEscapeRouteState() {
+      if (hasBackEdge) {
+        erBackEdge.style.display = 'block';
+        erLowText.textContent = 'low[3] = 2 (reaches 1!)';
+        erLowText.setAttribute('fill', '#059669');
+        erTreeEdge.setAttribute('stroke', '#0284C7');
+        erBadgeBg.setAttribute('stroke', '#059669');
+        erBadgeBg.setAttribute('fill', '#ECFDF5');
+        erBadgeTxt.setAttribute('fill', '#059669');
+        erBadgeTxt.textContent = 'CYCLE (Not a Bridge)';
+
+        erExplCard.className = 'bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-3';
+        erStatusIcon.textContent = '🛡️';
+        erStatusTitle.className = 'font-bold text-sm text-emerald-800';
+        erStatusTitle.textContent = 'ESCAPE ROUTE ACTIVE (Safe!)';
+        erLowCalc.innerHTML = 'low[next=3] = <span class="text-emerald-800 font-bold">2</span> (via back edge 5 ➔ 1)';
+        erCompareCalc.className = 'text-emerald-800 font-bold pt-1 border-t border-emerald-200';
+        erCompareCalc.innerHTML = 'low[3] (2) &gt; disc[1] (2) → FALSE (2 is not &gt; 2)';
+        erDescText.innerHTML = 'Because node 5 connects back to 1, cutting (1, 3) <strong>will not isolate</strong> {3, 4, 5}. Node 3 can reach 1 via 3 ➔ 5 ➔ 1. Thus, (1, 3) is <strong>NOT a bridge</strong>!';
+      } else {
+        erBackEdge.style.display = 'none';
+        erLowText.textContent = 'low[3] = 4';
+        erLowText.setAttribute('fill', '#D97706');
+        erTreeEdge.setAttribute('stroke', '#DC2626');
+        erBadgeBg.setAttribute('stroke', '#DC2626');
+        erBadgeBg.setAttribute('fill', '#FEF2F2');
+        erBadgeTxt.setAttribute('fill', '#DC2626');
+        erBadgeTxt.textContent = 'BRIDGE (1, 3)';
+
+        erExplCard.className = 'bg-rose-50 border border-rose-200 rounded-xl p-4 space-y-3';
+        erStatusIcon.textContent = '🚨';
+        erStatusTitle.className = 'font-bold text-sm text-rose-800';
+        erStatusTitle.textContent = 'NO ESCAPE ROUTE (Bridge!)';
+        erLowCalc.innerHTML = 'low[next=3] = <span class="text-amber-800 font-bold">4</span>';
+        erCompareCalc.className = 'text-rose-700 font-bold pt-1 border-t border-rose-200';
+        erCompareCalc.innerHTML = 'low[3] (4) &gt; disc[1] (2) → TRUE!';
+        erDescText.innerHTML = 'Node 3 and its children (4, 5) have <strong>zero connections</strong> back up to node 1 or above. Edge (1, 3) is their ONLY link to the rest of the graph. Cut it, and {3, 4, 5} are trapped forever!';
+      }
+    }
+
+    if (toggleBackEdgeBtn) {
+      toggleBackEdgeBtn.addEventListener('click', () => {
+        hasBackEdge = !hasBackEdge;
+        updateEscapeRouteState();
+      });
+    }
+
+    // ==========================================
+    // 4. Formative Knowledge Check Interactive Quiz
+    // ==========================================
+    const quizAnswers = { 1: 1, 2: 1, 3: 0 };
+    const quizFeedback = {
+      1: {
+        correct: "✓ Correct! low[v] represents the lowest discovery time reachable from v's DFS subtree using at most one back-edge (without traversing back to its direct parent).",
+        incorrect: "✗ Not quite. low[v] tracks cycle/ancestor reachability in the DFS tree. It represents the smallest discovery timestamp reachable from v or any of its descendants without backtracking to parent."
+      },
+      2: {
+        correct: "✓ Correct! If low[next] > disc[curr], next's entire subtree cannot reach curr or any ancestor above curr. Cutting (curr, next) completely isolates next's subtree!",
+        incorrect: "✗ Incorrect. The strict inequality low[next] > disc[curr] proves there is NO alternative path or back-edge from next's subtree back to curr or its ancestors. Hence, removing (curr, next) disconnects the graph."
+      },
+      3: {
+        correct: "✓ Correct! The naive algorithm removes an edge and runs a full O(V + E) search for all E edges, taking O(E · (V + E)). Tarjan processes every vertex and edge in a SINGLE depth-first search pass in O(V + E) time!",
+        incorrect: "✗ Incorrect. The naive method does E separate graph traversals. Tarjan's genius is that discovery times and low-link reachability are calculated dynamically during one single post-order DFS traversal in O(V + E) time."
+      }
+    };
+
+    let userScores = { 1: false, 2: false, 3: false };
+
+    window.answerQuiz = function(qNum, selectedOptionIdx) {
+      const card = document.getElementById(`q${qNum}-card`);
+      if (!card) return;
+      const buttons = card.querySelectorAll('.quiz-option');
+      const feedback = document.getElementById(`q${qNum}-feedback`);
+      const status = document.getElementById(`q${qNum}-status`);
+
+      const isCorrect = selectedOptionIdx === quizAnswers[qNum];
+      userScores[qNum] = isCorrect;
+
+      buttons.forEach((btn, idx) => {
+        btn.disabled = true;
+        btn.classList.remove('bg-white', 'hover:border-sky-400', 'hover:bg-sky-50/40', 'border-emerald-500', 'bg-emerald-50', 'border-rose-400', 'bg-rose-50');
+        if (idx === quizAnswers[qNum]) {
+          btn.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-950', 'font-semibold');
+        } else if (idx === selectedOptionIdx) {
+          btn.classList.add('border-rose-400', 'bg-rose-50', 'text-rose-950');
+        } else {
+          btn.classList.add('opacity-40');
+        }
+      });
+
+      if (feedback) {
+        feedback.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-900', 'border-emerald-200', 'bg-rose-50', 'text-rose-900', 'border-rose-200');
+        feedback.classList.add('border');
+
+        if (isCorrect) {
+          if (status) status.innerHTML = '<span class="text-emerald-800">✓ Correct</span>';
+          feedback.classList.add('bg-emerald-50', 'text-emerald-900', 'border-emerald-200');
+          feedback.innerHTML = quizFeedback[qNum].correct;
+        } else {
+          if (status) status.innerHTML = '<span class="text-rose-700">✗ Incorrect</span>';
+          feedback.classList.add('bg-rose-50', 'text-rose-900', 'border-rose-200');
+          feedback.innerHTML = quizFeedback[qNum].incorrect;
+        }
+      }
+
+      // Update total score badge
+      const totalCorrect = Object.values(userScores).filter(Boolean).length;
+      const scoreBadge = document.getElementById('quiz-score-badge');
+      if (scoreBadge) {
+        scoreBadge.textContent = `Score: ${totalCorrect} / 3`;
+        if (totalCorrect === 3) {
+          scoreBadge.className = 'px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-100 border border-emerald-300 text-emerald-800';
+        }
+      }
+    };
+
+    const resetQuizBtn = document.getElementById('reset-quiz-btn');
+    if (resetQuizBtn) {
+      resetQuizBtn.addEventListener('click', () => {
+        userScores = { 1: false, 2: false, 3: false };
+        const scoreBadge = document.getElementById('quiz-score-badge');
+        if (scoreBadge) {
+          scoreBadge.textContent = 'Score: 0 / 3';
+          scoreBadge.className = 'px-3 py-1 rounded-full text-xs font-mono font-bold bg-stone-100 border border-stone-200 text-stone-700';
+        }
+        for (let q = 1; q <= 3; q++) {
+          const card = document.getElementById(`q${q}-card`);
+          if (!card) continue;
+          const buttons = card.querySelectorAll('.quiz-option');
+          const feedback = document.getElementById(`q${q}-feedback`);
+          const status = document.getElementById(`q${q}-status`);
+          buttons.forEach(btn => {
+            btn.disabled = false;
+            btn.className = 'quiz-option text-left p-3 rounded-lg border border-stone-200 bg-white hover:border-sky-400 hover:bg-sky-50/40 transition';
+          });
+          if (feedback) feedback.classList.add('hidden');
+          if (status) status.innerHTML = '';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

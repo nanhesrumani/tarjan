@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GraphStudio • Tarjan Bridge & Recursion Visualizer</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <!-- 1. Left Cluster: Brand & Navigation -->
+    <div class="header-left">
+      <a href="/" class="brand-link" title="Return to Educational Guide">
+        <div class="brand-icon-box">⚡</div>
+        <div class="brand-text">
+          <span class="brand-name">GraphStudio</span>
+          <span class="badge">Visualizer</span>
+        </div>
+      </a>
+
+      <div class="header-vdivider"></div>
+
+      <nav class="header-nav-links">
+        <a href="/" class="header-link" title="Tarjan's Bridge Logic & Complexities">
+          <span>📖</span> <span>Guide</span>
+        </a>
+        <a href="/assignment/1" class="header-link header-link-amber" title="Jump to the 5 Graph Bridge Assignments">
+          <span>🚆</span> <span>5 Assignments</span>
+        </a>
+      </nav>
+    </div>
+
+    <!-- 2. Center Cluster: Presets & Graph Layout Toolbar -->
+    <div class="header-center">
+      <div class="header-control-cluster">
+        <!-- Preset Selector with Optgroups -->
+        <div class="header-select-wrapper">
+          <span class="cluster-label">Preset:</span>
+          <select id="preset-select" class="cluster-select" title="Choose a preset graph or assignment">
+            <option value="" disabled>Choose Graph...</option>
+            <optgroup label="Real-World Assignments">
+              <option value="railway_16" selected>🚆 1: Rail Grid (16 stations)</option>
+              <option value="hill_station">🏔️ 2: Hill Station (14 houses)</option>
+              <option value="social_network">👥 3: Social Circles (15 friends)</option>
+              <option value="iot_mesh">📡 4: IoT Vineyard Mesh (16 sensors)</option>
+              <option value="company_network">🏢 5: Corporate Hub (16 servers)</option>
+            </optgroup>
+            <optgroup label="Algorithm Concepts">
+              <option value="bridge_example">Bridge & Two Clusters</option>
+              <option value="cycle_with_chord">Triangle & Cycle Chords</option>
+              <option value="bipartite">Two Separated Clusters</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="cluster-vdivider"></div>
+
+        <!-- Graph Auto-Layout -->
+        <select id="layout-select" class="cluster-select-subtle" title="Arrange Graph Layout">
+          <option value="spring">Layout: Spring</option>
+          <option value="circular">Layout: Circle</option>
+          <option value="shell">Layout: Shell</option>
+        </select>
+
+        <!-- Directed / Undirected Toggle -->
+        <button id="toggle-directed-btn" class="cluster-btn" title="Toggle Directed / Undirected">
+          <span id="directed-icon">—</span> <span id="directed-label">Undirected</span>
+        </button>
+
+        <div class="cluster-vdivider"></div>
+
+        <!-- Clear Button -->
+        <button id="clear-graph-btn" class="cluster-btn cluster-btn-danger" title="Clear all nodes and edges">
+          🗑 Clear
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. Right Cluster: Workspace Panel Toggles -->
+    <div class="header-right">
+      <div class="header-panels-cluster">
+        <span class="cluster-label">Panels:</span>
+
+        <!-- Code Tutor Toggle (Starts active for 50/50 screen split) -->
+        <button id="toggle-left-btn" class="panel-pill-btn active" title="Toggle Code Tutor & Recursion Inspector">
+          <span>⚡</span> <span>Code Tutor</span>
+        </button>
+
+        <!-- Bottom Panel Toggle (Starts active) -->
+        <button id="toggle-bottom-btn" class="panel-pill-btn active" title="Toggle Steps & Call Stack Panel">
+          <span>📊</span> <span>Steps & Stack</span>
+        </button>
+
+        <!-- Right Tools Toggle (Starts minimized) -->
+        <button id="toggle-right-btn" class="panel-pill-btn" title="Toggle Graph Construction Tools">
+          <span>☰</span> <span>Tools</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="app-container">
+
+    <!-- LEFT SIDEBAR: Code Tutor & Recursion Stack Windows (Open in 50/50 Split) -->
+    <aside id="left-sidebar" class="left-sidebar">
+      <div class="java-editor-header">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);">⚡ Code Tutor (Python Tutor Style)</span>
+        </div>
+        <div style="display: flex; gap: 0.35rem; align-items: center;">
+          <button id="toggle-edit-mode-btn" class="btn-outline" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" title="Switch between Code Viewer and Edit Code">
+            ✎ Edit Code
+          </button>
+          <button id="close-left-sidebar" class="btn-outline sidebar-collapse-btn" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" title="Minimize Code Tutor">◀ Minimize</button>
+        </div>
+      </div>
+
+      <div class="java-editor-body">
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <button id="run-visualizer-btn" class="btn-accent" style="flex: 1; padding: 0.55rem; font-weight: 700;">
+            <span>▶</span> Start Step Visualizer
+          </button>
+          <button id="reset-code-btn" class="btn-outline" title="Reset to your pasted Solution code">↺</button>
+        </div>
+
+        <!-- Editable Textarea (shown when user clicks Edit Code) -->
+        <textarea id="java-code-editor" class="code-textarea" spellcheck="false" style="display: none;">class Solution {
+    int[] disc, low;
+    int time = 1;
+    List<List<Integer>> ans = new ArrayList<>();
+    Map<Integer,List<Integer>> edgeMap = new HashMap<>();
+    public List<List<Integer>> criticalConnections(int n, List<List<Integer>> connections) {
+        disc = new int[n];
+        low = new int[n];
+        for (int i = 0; i < n; i++)
+            edgeMap.put(i, new ArrayList<Integer>());
+        for (List<Integer> conn : connections) {
+            edgeMap.get(conn.get(0)).add(conn.get(1));
+            edgeMap.get(conn.get(1)).add(conn.get(0));
+        }
+        dfs(0, -1);
+        return ans;
+    }
+    public void dfs(int curr, int prev) {
+        disc[curr] = low[curr] = time++;
+        for (int next : edgeMap.get(curr)) {
+            if (disc[next] == 0) {
+                dfs(next, curr);
+                low[curr] = Math.min(low[curr], low[next]);
+            } else if (next != prev)
+                low[curr] = Math.min(low[curr], disc[next]);
+            if (low[next] > disc[curr]) 
+                ans.add(Arrays.asList(curr, next));
+        }
+    }
+}</textarea>
+
+        <!-- Python Tutor Style Code Viewer with Line Numbers and Moving Arrow Indicator -->
+        <div id="code-viewer-container" class="code-viewer-container">
+          <div id="code-lines-wrapper" class="code-lines-wrapper"></div>
+        </div>
+
+        <!-- Recursion Call Windows Section -->
+        <div class="rec-section-header">
+          <span style="font-size: 0.76rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-cyan);">
+            🪟 Recursion Windows (Call Frames)
+          </span>
+          <span id="rec-depth-badge" class="badge">Stack Depth: 0</span>
+        </div>
+
+        <div id="recursion-windows-container" class="recursion-windows-container">
+          <div id="rec-empty-hint" style="font-size: 0.75rem; color: var(--text-muted); text-align: center; padding: 1.5rem 0.5rem; line-height: 1.5;">
+            Click <strong>▶ Start Step Visualizer</strong> to trace each line of your code with a moving arrow and watch recursion create new windows!
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Vertical Drag Resizer for Left Sidebar -->
+    <div id="left-sidebar-resizer" class="resizer-v" title="Drag to resize Code Tutor"></div>
+
+    <!-- Main Viewport (Canvas + Resizable Bottom Panel) -->
+    <div class="main-viewport">
+      
+      <!-- Canvas Area -->
+      <main class="canvas-wrapper">
+        
+        <!-- Floating Canvas Toolbar -->
+        <div class="floating-toolbar">
+          <button id="tool-select" class="tool-btn active" title="Select & Drag Nodes">
+            <span>👆</span> Select / Drag
+          </button>
+          <button id="tool-add-node" class="tool-btn" title="Click anywhere to add node">
+            <span>➕</span> Add Node
+          </button>
+          <button id="tool-connect" class="tool-btn" title="Click source then target node to connect">
+            <span>🔗</span> Connect Mode
+          </button>
+          <div class="toolbar-divider"></div>
+          <button id="tool-auto-split" class="tool-btn" title="Toggle automatically splitting layout when an edge is clicked">
+            <span>↔</span> Auto-Split: <strong id="auto-split-state" style="color: var(--accent-cyan); margin-left: 2px;">ON</strong>
+          </button>
+          <div class="toolbar-divider"></div>
+          <button id="tool-fit" class="tool-btn" title="Reset & Auto-Center Graph">
+            <span>🎯</span> Center
+          </button>
+        </div>
+
+        <!-- Floating Dock Tabs to expand sidebars when minimized -->
+        <button id="dock-left-btn" class="floating-dock-tab dock-left" style="display: none;" title="Expand Code Tutor">
+          <span>⚡</span> Code Tutor <span>▶</span>
+        </button>
+        <button id="dock-right-btn" class="floating-dock-tab dock-right" style="display: flex;" title="Expand Graph Tools">
+          <span>◀</span> <span>☰</span> Graph Tools
+        </button>
+
+        <!-- Floating Hint -->
+        <div class="floating-hint">
+          💡 <strong>Tip:</strong> Drag canvas to pan, scroll wheel or buttons to zoom! Nodes show live <code>[disc | low]</code>.
+        </div>
+
+        <!-- Floating Zoom & Pan Controls Bar -->
+        <div id="zoom-controls-bar" class="floating-zoom-bar">
+          <button id="zoom-in-btn" class="zoom-btn" title="Zoom In (+)">➕</button>
+          <button id="zoom-level-badge" class="zoom-level-btn" title="Click to Reset Zoom (100%)">100%</button>
+          <button id="zoom-out-btn" class="zoom-btn" title="Zoom Out (-)">➖</button>
+          <button id="zoom-fit-btn" class="zoom-btn" title="Fit & Center Graph">🎯 Fit</button>
+          <div class="zoom-divider"></div>
+          <button id="focus-mode-btn" class="zoom-btn focus-btn" title="Focus Mode: Minimize all sidebars & bottom panel to see graph full screen">⛶ Focus</button>
+        </div>
+
+        <!-- SVG Graph Canvas -->
+        <svg id="graph-svg">
+          <defs>
+            <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#94A3B8" />
+            </marker>
+            <marker id="arrowhead-selected" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#D97706" />
+            </marker>
+            <marker id="arrowhead-bridge" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#DC2626" />
+            </marker>
+          </defs>
+
+          <!-- Main Viewport Transform Group for Pan & Zoom -->
+          <g id="viewport-transform">
+            <!-- Vertical Split Center Divider Line (shown during split) -->
+            <line id="split-divider" class="split-divider-line" x1="0" y1="0" x2="0" y2="0" style="display: none;"></line>
+
+            <!-- Edges Layer -->
+            <g id="edges-layer"></g>
+
+            <!-- Temporary Rubberband Line while connecting -->
+            <line id="rubberband-edge" class="rubberband-line" x1="0" y1="0" x2="0" y2="0" style="display: none;"></line>
+
+            <!-- Nodes Layer -->
+            <g id="nodes-layer"></g>
+          </g>
+        </svg>
+
+      </main>
+
+      <!-- Horizontal Drag Resizer for Bottom Panel -->
+      <div id="bottom-resizer" class="resizer-h" title="Drag to resize bottom panel height"></div>
+
+      <!-- Resizable Bottom Panel (Tabs: Steps Playback, Terminal Log, Edge Split) -->
+      <div id="bottom-panel" class="bottom-panel">
+        <div class="bottom-panel-header">
+          <div class="bottom-tabs">
+            <button class="btab-btn active" data-btab="pane-steps">
+              <span>📚</span> Call Stack & Steps
+            </button>
+            <button class="btab-btn" data-btab="pane-terminal">
+              <span>💻</span> Step Log Console
+            </button>
+            <button class="btab-btn" data-btab="pane-split">
+              <span>🔬</span> Edge Split & Bridge
+            </button>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <button id="clear-terminal-btn" class="btn-outline" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+              Clear Console
+            </button>
+            <button id="toggle-bottom-minimize-btn" class="btn-outline" style="font-size: 0.75rem; padding: 0.2rem 0.55rem;" title="Minimize / Expand Bottom Panel">
+              ▼ Minimize
+            </button>
+          </div>
+        </div>
+
+        <div class="bottom-panel-body">
+          
+          <!-- TAB PANE 1: Steps Playback & Call Stack -->
+          <div id="pane-steps" class="btab-pane active">
+            <div class="steps-pane-container">
+              <div class="playback-controls-row">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <button id="playback-prev" class="btn-secondary">⏮ Prev</button>
+                  <button id="playback-play" class="btn-accent" style="font-weight: 700;">▶ Play</button>
+                  <button id="playback-next" class="btn-secondary">⏭ Next</button>
+                  <span id="step-counter-badge" class="badge">Step 0 / 0</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                  <span style="font-size: 0.75rem; color: var(--text-muted);">Speed:</span>
+                  <input type="range" id="playback-speed" min="150" max="1800" step="50" value="650" style="width: 80px;" />
+                </div>
+              </div>
+
+              <div class="steps-details-row">
+                <div class="step-desc-card" id="step-description-text">
+                  Click <strong>▶ Start Step Visualizer</strong> on the left to watch each line execute with an arrow and live recursion windows!
+                </div>
+
+                <div class="stack-cards-group">
+                  <div class="stack-card">
+                    <div class="stack-card-title">Recursion Call Stack</div>
+                    <div id="call-stack-list" class="stack-pills-list">
+                      <span style="font-size: 0.75rem; color: var(--text-muted);">(empty)</span>
+                    </div>
+                  </div>
+                  <div class="stack-card">
+                    <div class="stack-card-title">Critical Bridges Found</div>
+                    <div id="tarjan-stack-list" class="stack-pills-list">
+                      <span style="font-size: 0.75rem; color: var(--text-muted);">None found yet</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB PANE 2: Step Log Console -->
+          <div id="pane-terminal" class="btab-pane">
+            <div id="terminal-container" class="terminal-container">
+              <div class="terminal-line"><span class="terminal-prompt">$</span> Welcome to GraphStudio Code Tutor Console. Ready to step through your algorithm.</div>
+            </div>
+          </div>
+
+          <!-- TAB PANE 3: Edge Split & Bridge Inspector -->
+          <div id="pane-split" class="btab-pane">
+            <div style="display: flex; flex-direction: column; width: 100%; height: 100%;">
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 1rem; border-bottom: 1px solid var(--border-color); background: #F7F4EE; flex-shrink: 0;">
+                <div id="bridge-status-badge" class="badge" style="display: none;">Select an edge to analyze</div>
+                <div style="display: flex; gap: 0.5rem;">
+                  <button id="apply-split-layout-btn" class="btn-accent" style="font-size: 0.75rem; padding: 0.25rem 0.6rem; display: none;">↔ Apply Split</button>
+                  <button id="reset-split-layout-btn" class="btn-outline" style="font-size: 0.75rem; padding: 0.25rem 0.6rem; display: none;">↺ Reset Split</button>
+                </div>
+              </div>
+              <div class="split-pane-container" style="flex: 1;">
+                <!-- Left Side Cluster -->
+                <div class="split-card">
+                  <div class="split-card-title">
+                    <span>⬅ Left Side</span>
+                    <span id="left-count-badge" style="font-size: 0.7rem; color: var(--text-muted);">(0)</span>
+                  </div>
+                  <div id="split-left-nodes" class="split-node-list">
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Select an edge to analyze</span>
+                  </div>
+                </div>
+
+                <!-- Center Vertical Mutual Nodes -->
+                <div class="split-card">
+                  <div class="split-card-title">
+                    <span>⬆ Center Vertical (Mutual)</span>
+                    <span id="center-count-badge" style="font-size: 0.7rem; color: var(--text-muted);">(0)</span>
+                  </div>
+                  <div id="split-center-nodes" class="split-node-list">
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">None</span>
+                  </div>
+                </div>
+
+                <!-- Right Side Cluster -->
+                <div class="split-card">
+                  <div class="split-card-title">
+                    <span>➡ Right Side</span>
+                    <span id="right-count-badge" style="font-size: 0.7rem; color: var(--text-muted);">(0)</span>
+                  </div>
+                  <div id="split-right-nodes" class="split-node-list">
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">None</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Vertical Drag Resizer for Right Sidebar -->
+    <div id="right-sidebar-resizer" class="resizer-v" style="display: none;" title="Drag to resize Graph Tools sidebar"></div>
+
+    <!-- RIGHT SIDEBAR: Graph Creation Tools (Manual & Batch Text) -->
+    <aside id="right-sidebar" class="right-sidebar closed">
+      <div class="sidebar-tabs">
+        <button class="tab-btn active" data-tab="tab-manual">Manual Tools</button>
+        <button class="tab-btn" data-tab="tab-text">Edge List Text</button>
+        <button id="close-right-sidebar" class="btn-outline sidebar-tab-collapse" style="margin-left: auto; margin-right: 0.5rem; padding: 0.15rem 0.45rem; font-size: 0.75rem;" title="Minimize Graph Tools">
+          Minimize ▶
+        </button>
+      </div>
+
+      <div class="sidebar-content">
+
+        <!-- TAB 1: Manual Tools -->
+        <div id="tab-manual" class="tab-pane active">
+          
+          <!-- Add Node Section -->
+          <div class="panel-section">
+            <span class="section-title">Add Node</span>
+            <div class="input-row">
+              <input type="text" id="manual-node-id" placeholder="Node Name (e.g. 0, 1, A)" />
+              <button id="manual-add-node-btn" class="btn-primary">+ Add</button>
+            </div>
+          </div>
+
+          <!-- Add Edge Section -->
+          <div class="panel-section" style="margin-top: 1rem;">
+            <span class="section-title">Add Edge (Stretchable Connection)</span>
+            <div class="form-group">
+              <div class="input-row">
+                <input type="text" id="manual-edge-from" placeholder="From Node (e.g. 0)" />
+                <input type="text" id="manual-edge-to" placeholder="To Node (e.g. 1)" />
+              </div>
+            </div>
+            <div class="form-group" style="margin-top: 0.4rem;">
+              <div class="input-row">
+                <input type="number" id="manual-edge-weight" placeholder="Weight (default: 1)" value="1" step="any" />
+                <button id="manual-add-edge-btn" class="btn-accent">+ Connect</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Selected Element Info -->
+          <div class="panel-section" style="margin-top: 1.25rem;">
+            <span class="section-title">Selected Element</span>
+            <div id="selection-details" style="font-size: 0.85rem; color: var(--text-muted); background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.75rem;">
+              Click any node or edge to inspect or test bridge separation.
+            </div>
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+              <button id="split-selected-edge-btn" class="btn-accent" style="display: none; flex: 1;">
+                ↔ Split Graph On Edge
+              </button>
+              <button id="delete-selected-btn" class="btn-danger" style="display: none;">
+                Delete
+              </button>
+            </div>
+          </div>
+
+          <!-- Canvas Gestures Guide -->
+          <div class="panel-section" style="margin-top: 1rem;">
+            <span class="section-title">Quick Gestures</span>
+            <ul style="font-size: 0.78rem; color: var(--text-muted); padding-left: 1.2rem; line-height: 1.6;">
+              <li><strong>Click on an edge:</strong> Separates graph into left/right clusters; mutual nodes align vertically above!</li>
+              <li><strong>Double-click canvas:</strong> Drops a new node.</li>
+              <li><strong>Drag node:</strong> Moves node freely; stretchable edges follow smoothly.</li>
+              <li><strong>Drag cyan handle:</strong> Pulls rubberband connection to another node.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- TAB 2: Text / Edge List Batch Input -->
+        <div id="tab-text" class="tab-pane" style="display: none;">
+          <div class="panel-section">
+            <span class="section-title">Batch Edge List Text</span>
+            <p style="font-size: 0.75rem; color: var(--text-muted);">
+              Type or paste connections with any delimiter:
+              <br>• <code>0 - 1</code> or <code>A -> B</code>
+              <br>• <code>A B</code> or <code>1 2</code> (space/tab)
+              <br>• <code>A: B, C</code> (adjacency)
+            </p>
+            <textarea id="batch-edge-text" rows="12" placeholder="0 - 1&#10;1 - 2&#10;2 - 0&#10;1 - 3&#10;3 - 4&#10;4 - 5&#10;5 - 3">0 - 1
+1 - 2
+2 - 0
+1 - 3
+3 - 4
+4 - 5
+5 - 3</textarea>
+            <button id="apply-batch-text-btn" class="btn-primary" style="margin-top: 0.5rem;">
+              ⚡ Build & Draw Graph
+            </button>
+            <div id="batch-parse-status" style="margin-top: 0.5rem; font-size: 0.75rem; display: none;"></div>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
